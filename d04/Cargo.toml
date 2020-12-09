@@ -1,0 +1,14 @@
+[package]
+name = "d04"
+version = "0.1.0"
+authors = ["Denis Cornehl <denis.cornehl@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lazy_static = "1.4.0"
+regex = "1.4.2"
+serde = {version = "1.0.117", features = ["derive"]}
+test-case = "1.0.0"
+validator = {version = "0.12.0", features = ["derive"]}
