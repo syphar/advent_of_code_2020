@@ -41,7 +41,7 @@ fn main() {
 mod tests {
     use super::*;
     lazy_static! {
-        static ref TEST_DATA: Vec<i64> = vec![1721i64, 979, 366, 299, 675, 1456];
+        static ref TEST_DATA: Vec<i64> = vec![1721, 979, 366, 299, 675, 1456];
     }
 
     #[test]
