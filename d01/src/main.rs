@@ -1,11 +1,13 @@
 #[macro_use]
 extern crate itertools;
+#[macro_use]
+extern crate lazy_static;
 
 use simple_error::SimpleError;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-pub fn doit(numbers: Vec<i64>) -> Result<i64, SimpleError> {
+fn part_1(numbers: &Vec<i64>) -> Result<i64, SimpleError> {
     for (i, j) in iproduct!(numbers.iter(), numbers.iter()) {
         if i + j == 2020 {
             return Ok(i * j);
@@ -14,7 +16,7 @@ pub fn doit(numbers: Vec<i64>) -> Result<i64, SimpleError> {
     Err(SimpleError::new("nothing found"))
 }
 
-pub fn doit3(numbers: Vec<i64>) -> Result<i64, SimpleError> {
+fn part_2(numbers: &Vec<i64>) -> Result<i64, SimpleError> {
     for (i, j, k) in iproduct!(numbers.iter(), numbers.iter(), numbers.iter()) {
         if i + j + k == 2020 {
             return Ok(i * j * k);
@@ -26,31 +28,29 @@ pub fn doit3(numbers: Vec<i64>) -> Result<i64, SimpleError> {
 fn main() {
     let file = File::open("input.txt").unwrap();
 
-    let vec: Vec<i64> = BufReader::new(file)
+    let numbers: Vec<i64> = BufReader::new(file)
         .lines()
         .map(|line| line.unwrap().parse().unwrap())
         .collect();
 
-    println!("{:?}", doit3(vec).unwrap());
+    println!("part 1: {:?}", part_1(&numbers));
+    println!("part 2: {:?}", part_2(&numbers));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn it_works() {
-        assert_eq!(
-            doit(vec![1721i64, 979, 366, 299, 675, 1456]).unwrap(),
-            514579
-        );
+    lazy_static! {
+        static ref TEST_DATA: Vec<i64> = vec![1721i64, 979, 366, 299, 675, 1456];
     }
 
     #[test]
-    fn it_works3() {
-        assert_eq!(
-            doit3(vec![1721i64, 979, 366, 299, 675, 1456]).unwrap(),
-            241861950
-        );
+    fn part_1_works() {
+        assert_eq!(part_1(&TEST_DATA), Ok(514579));
+    }
+
+    #[test]
+    fn part_2_works() {
+        assert_eq!(part_2(&TEST_DATA), Ok(241861950));
     }
 }
