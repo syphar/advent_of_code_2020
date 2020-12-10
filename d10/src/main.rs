@@ -3,13 +3,11 @@ extern crate lazy_static;
 
 use counter::Counter;
 use itertools::Itertools;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::iter::FromIterator;
 
 fn main() {
-    let file = File::open("input.txt").unwrap();
+    let file = File::open("input2.txt").unwrap();
 
     let input: Vec<u16> = BufReader::new(file)
         .lines()
@@ -35,29 +33,26 @@ fn run(input: &Vec<u16>) -> usize {
 }
 
 fn is_valid(input: &Vec<&u16>, builtin_jolts: u16) -> bool {
-    let mut sorted: Vec<u16> = input.iter().map(|v| **v).collect();
-    sorted.insert(0, 0); // start at 0
-    sorted.push(builtin_jolts); // builtin adapter
-
-    let counter = sorted
+    let mut counter = input
         .windows(2)
         .map(|slice| slice[1] - slice[0])
         .collect::<Counter<_>>();
 
-    // println!("{:?}", counter);
-    for key in counter.keys() {
-        if !((1..=3).contains(key)) {
-            return false;
-        }
-    }
-    true
+    counter[&input[0]] += 1; // step from 0 to first value
+
+    // step from last element to builting jolts
+    let last_step = builtin_jolts - *(input.last().unwrap());
+    counter[&last_step] += 1;
+
+    let valid_steps = 1..=3;
+    !(counter.keys().any(|k| !valid_steps.contains(k)))
 }
 
 fn run2(input: &Vec<u16>) -> usize {
     let mut sorted = input.clone();
     sorted.sort();
 
-    let builtin_jolts: u16 = *(sorted.last().unwrap());
+    let builtin_jolts: u16 = *(sorted.last().unwrap()) + 3;
 
     let mut count = 0;
 
@@ -111,8 +106,8 @@ mod tests {
         assert_eq!(run2(&TEST_DATA_1), 8);
     }
 
-    // #[test]
-    // fn part_2_works_2() {
-    //     assert_eq!(run2(&TEST_DATA_2), 19208);
-    // }
+    #[test]
+    fn part_2_works_2() {
+        assert_eq!(run2(&TEST_DATA_2), 19208);
+    }
 }
