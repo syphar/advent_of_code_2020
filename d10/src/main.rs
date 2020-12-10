@@ -2,6 +2,7 @@
 extern crate lazy_static;
 
 use counter::Counter;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -31,16 +32,27 @@ fn run(input: &Vec<u16>) -> usize {
     counter.get(&1).unwrap_or(&0) * counter.get(&3).unwrap_or(&0)
 }
 
-fn find_combinations(values: &[bool], start_at: u16, end_at: u16) -> usize {
+fn find_combinations(
+    values: &[bool],
+    cache: &mut HashMap<u16, usize>,
+    start_at: u16,
+    end_at: u16,
+) -> usize {
+    if cache.contains_key(&start_at) {
+        return *(cache.get(&start_at).unwrap());
+    }
+
     let mut count = 0;
     for step in 1..=3 {
         let test = start_at + step;
         if test == end_at {
             count = 1;
         } else if (test as usize) < values.len() && values[test as usize] == true {
-            count += find_combinations(&values, test, end_at);
+            count += find_combinations(&values, cache, test, end_at);
         }
     }
+
+    cache.insert(start_at, count);
     count
 }
 
@@ -52,7 +64,9 @@ fn run2(input: &Vec<u16>) -> usize {
     }
     let end_at = max + 3;
 
-    find_combinations(&values, 0, end_at)
+    let mut cache: HashMap<u16, usize> = HashMap::new();
+
+    find_combinations(&values, &mut cache, 0, end_at)
 }
 
 #[cfg(test)]
