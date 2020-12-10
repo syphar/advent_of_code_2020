@@ -23,18 +23,13 @@ fn main() {
 fn run(input: &Vec<u16>) -> usize {
     let mut sorted = input.clone();
     sorted.sort();
+    sorted.insert(0, 0); // start at 0
+    sorted.push(sorted.iter().max().unwrap() + 3); // builtin adapter
 
-    // start at 0
-    sorted.insert(0, 0);
-
-    // builtin adapter
-    sorted.push(sorted.iter().max().unwrap() + 3);
-
-    let mut counter: Counter<u16> = Counter::new();
-    for slice in sorted.windows(2) {
-        let diff = slice[1] - slice[0];
-        counter[&diff] += 1;
-    }
+    let counter = sorted
+        .windows(2)
+        .map(|slice| slice[1] - slice[0])
+        .collect::<Counter<_>>();
 
     counter.get(&1).unwrap_or(&0) * counter.get(&3).unwrap_or(&0)
 }
@@ -69,7 +64,7 @@ mod tests {
     }
 
     #[test]
-    fn part_1_works_works2() {
+    fn part_1_works_2() {
         assert_eq!(run(&TEST_DATA_2), 220);
     }
 }
