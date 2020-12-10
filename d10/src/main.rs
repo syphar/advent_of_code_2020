@@ -41,7 +41,7 @@ fn find_combinations(
     end_at: u16,
 ) -> usize {
     if cache.contains_key(&start_at) {
-        return *(cache.get(&start_at).unwrap());
+        return cache.get(&start_at).unwrap().clone();
     }
 
     let mut count = 0;
@@ -49,8 +49,9 @@ fn find_combinations(
         let test = start_at + step;
         if test == end_at {
             count = 1;
+            break;
         } else if values.contains(&test) {
-            count += find_combinations(&values, cache, test, end_at);
+            count += find_combinations(values, cache, test, end_at);
         }
     }
 
