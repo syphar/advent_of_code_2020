@@ -2,10 +2,11 @@
 extern crate lazy_static;
 
 use counter::Counter;
-use simple_error::SimpleError;
-use std::collections::HashMap;
+use itertools::Itertools;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::iter::FromIterator;
 
 fn main() {
     let file = File::open("input.txt").unwrap();
@@ -16,15 +17,14 @@ fn main() {
         .collect();
 
     println!("part 1: {:?}", run(&input));
-    //     println!("part 2: {:?}", run2(&input, invalid_number));
-    // }
+    println!("part 2: {:?}", run2(&input));
 }
 
 fn run(input: &Vec<u16>) -> usize {
     let mut sorted = input.clone();
     sorted.sort();
     sorted.insert(0, 0); // start at 0
-    sorted.push(sorted.iter().max().unwrap() + 3); // builtin adapter
+    sorted.push(sorted.last().unwrap() + 3); // builtin adapter
 
     let counter = sorted
         .windows(2)
@@ -34,17 +34,55 @@ fn run(input: &Vec<u16>) -> usize {
     counter.get(&1).unwrap_or(&0) * counter.get(&3).unwrap_or(&0)
 }
 
-// fn run2(input: &Vec<u64>, to_find: u64) -> Result<u64, SimpleError> {
-//     for window_size in 2..=input.len() {
-//         for slice in input.windows(window_size) {
-//             if slice.iter().sum::<u64>() == to_find {
-//                 return Ok(slice.iter().min().unwrap() + slice.iter().max().unwrap());
-//             }
-//         }
-//     }
+fn is_valid(input: &Vec<&u16>, builtin_jolts: u16) -> bool {
+    let mut sorted: Vec<u16> = input.iter().map(|v| **v).collect();
+    sorted.insert(0, 0); // start at 0
+    sorted.push(builtin_jolts); // builtin adapter
 
-//     Err(SimpleError::new("no combination found"))
-// }
+    let counter = sorted
+        .windows(2)
+        .map(|slice| slice[1] - slice[0])
+        .collect::<Counter<_>>();
+
+    // println!("{:?}", counter);
+    for key in counter.keys() {
+        if !((1..=3).contains(key)) {
+            return false;
+        }
+    }
+    true
+}
+
+fn run2(input: &Vec<u16>) -> usize {
+    let mut sorted = input.clone();
+    sorted.sort();
+
+    let builtin_jolts: u16 = *(sorted.last().unwrap());
+
+    let mut count = 0;
+
+    for length in 1..=sorted.len() {
+        // println!("try len {:?}", length);
+
+        for el in sorted.iter().combinations(length) {
+            // println!("\n\n{:?}", el);
+            // println!("value: {:?}", is_valid(&el, builtin_jolts));
+            if is_valid(&el, builtin_jolts) {
+                count += 1;
+            }
+        }
+    }
+    count
+
+    // sorted.insert(0, 0); // start at 0
+    // sorted.push(sorted.last().unwrap() + 3); // builtin adapter
+
+    // println!("{:?}", permutations);
+
+    // assert_eq!(permutations.len(), 720);
+
+    // 0
+}
 
 #[cfg(test)]
 mod tests {
@@ -67,4 +105,14 @@ mod tests {
     fn part_1_works_2() {
         assert_eq!(run(&TEST_DATA_2), 220);
     }
+
+    #[test]
+    fn part_2_works() {
+        assert_eq!(run2(&TEST_DATA_1), 8);
+    }
+
+    // #[test]
+    // fn part_2_works_2() {
+    //     assert_eq!(run2(&TEST_DATA_2), 19208);
+    // }
 }
