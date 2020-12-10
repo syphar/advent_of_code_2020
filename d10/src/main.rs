@@ -33,19 +33,26 @@ fn run(input: &Vec<u16>) -> usize {
 }
 
 fn is_valid(input: &Vec<&u16>, builtin_jolts: u16) -> bool {
-    let mut counter = input
-        .windows(2)
-        .map(|slice| slice[1] - slice[0])
-        .collect::<Counter<_>>();
-
-    counter[&input[0]] += 1; // step from 0 to first value
-
-    // step from last element to builting jolts
-    let last_step = builtin_jolts - *(input.last().unwrap());
-    counter[&last_step] += 1;
-
     let valid_steps = 1..=3;
-    !(counter.keys().any(|k| !valid_steps.contains(k)))
+
+    // step from 0 to first value
+    if !(valid_steps.contains(input[0])) {
+        return false;
+    }
+
+    // step from last element to builtin value
+    let last_step = builtin_jolts - *(input.last().unwrap());
+    if !(valid_steps.contains(&last_step)) {
+        return false;
+    }
+
+    for step in input.windows(2).map(|slice| slice[1] - slice[0]) {
+        if !(valid_steps.contains(&step)) {
+            return false;
+        }
+    }
+
+    true
 }
 
 fn run2(input: &Vec<u16>) -> usize {
