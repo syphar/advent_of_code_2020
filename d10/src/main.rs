@@ -34,7 +34,7 @@ fn run(input: &Vec<u16>) -> usize {
     counter.get(&1).unwrap_or(&0) * counter.get(&3).unwrap_or(&0)
 }
 
-fn find_combinations(
+fn count_combinations(
     values: &HashSet<u16>,
     cache: &mut HashMap<u16, usize>,
     start_at: u16,
@@ -51,7 +51,7 @@ fn find_combinations(
             count = 1;
             break;
         } else if values.contains(&test) {
-            count += find_combinations(values, cache, test, end_at);
+            count += count_combinations(values, cache, test, end_at);
         }
     }
 
@@ -66,7 +66,7 @@ fn run2(input: &Vec<u16>) -> usize {
     let values = HashSet::from_iter(input.iter().cloned());
     let mut cache: HashMap<u16, usize> = HashMap::new();
 
-    find_combinations(&values, &mut cache, 0, end_at)
+    count_combinations(&values, &mut cache, 0, end_at)
 }
 
 #[cfg(test)]
