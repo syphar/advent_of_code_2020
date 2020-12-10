@@ -2,9 +2,10 @@
 extern crate lazy_static;
 
 use counter::Counter;
-use permutator::large_combination;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::iter::FromIterator;
 
 fn main() {
     let file = File::open("input.txt").unwrap();
@@ -32,52 +33,24 @@ fn run(input: &Vec<u16>) -> usize {
     counter.get(&1).unwrap_or(&0) * counter.get(&3).unwrap_or(&0)
 }
 
-fn is_valid(input: &[&u16], builtin_jolts: u16) -> bool {
-    let valid_steps = 1..=3;
-
-    // step from 0 to first value
-    if !(valid_steps.contains(input[0])) {
-        return false;
-    }
-
-    // step from last element to builtin value
-    let last_step = builtin_jolts - *(input.last().unwrap());
-    if !(valid_steps.contains(&last_step)) {
-        return false;
-    }
-
-    for step in input.windows(2).map(|slice| slice[1] - slice[0]) {
-        if !(valid_steps.contains(&step)) {
-            return false;
+fn find_combinations(values: &HashSet<u16>, start_at: u16, end_at: u16) -> usize {
+    let mut count = 0;
+    for step in 1..=3 {
+        let test = start_at + step;
+        if test == end_at {
+            count = 1;
+        } else if values.contains(&test) {
+            count += find_combinations(&values, test, end_at);
         }
     }
-
-    true
+    count
 }
 
 fn run2(input: &Vec<u16>) -> usize {
-    let mut sorted = input.clone();
-    sorted.sort();
+    let values = HashSet::from_iter(input.iter().cloned());
+    let end_at = values.iter().max().unwrap() + 3;
 
-    let builtin_jolts: u16 = *(sorted.last().unwrap()) + 3;
-
-    // assuming we have a max step size of 3,
-    // there is a minimum amount of steps to get from 0 to builtin_jolts
-    let min_steps = (builtin_jolts as f32 / 3.0).ceil() as usize;
-
-    let mut count = 0;
-
-    // try all possible connector counts
-    for length in min_steps..=sorted.len() {
-        // try all possible combinations using the connectors given
-        large_combination(&sorted, length, |el| {
-            // check if they are valid
-            if is_valid(el, builtin_jolts) {
-                count += 1;
-            }
-        });
-    }
-    count
+    find_combinations(&values, 0, end_at)
 }
 
 #[cfg(test)]
@@ -107,9 +80,8 @@ mod tests {
         assert_eq!(run2(&TEST_DATA_1), 8);
     }
 
-    // Test is too slow, but release-build gives the correct result
-    // #[test]
-    // fn part_2_works_2() {
-    //     assert_eq!(run2(&TEST_DATA_2), 19208);
-    // }
+    #[test]
+    fn part_2_works_2() {
+        assert_eq!(run2(&TEST_DATA_2), 19208);
+    }
 }
