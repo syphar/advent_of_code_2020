@@ -3,8 +3,10 @@ extern crate lazy_static;
 
 use counter::Counter;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::iter::FromIterator;
 
 fn main() {
     let file = File::open("input.txt").unwrap();
@@ -33,7 +35,7 @@ fn run(input: &Vec<u16>) -> usize {
 }
 
 fn find_combinations(
-    values: &[bool],
+    values: &HashSet<u16>,
     cache: &mut HashMap<u16, usize>,
     start_at: u16,
     end_at: u16,
@@ -47,7 +49,7 @@ fn find_combinations(
         let test = start_at + step;
         if test == end_at {
             count = 1;
-        } else if (test as usize) < values.len() && values[test as usize] == true {
+        } else if values.contains(&test) {
             count += find_combinations(&values, cache, test, end_at);
         }
     }
@@ -58,12 +60,9 @@ fn find_combinations(
 
 fn run2(input: &Vec<u16>) -> usize {
     let max = input.iter().max().unwrap();
-    let mut values = vec![false; (*max as usize) + 1];
-    for v in input.iter() {
-        values[*v as usize] = true;
-    }
     let end_at = max + 3;
 
+    let values = HashSet::from_iter(input.iter().cloned());
     let mut cache: HashMap<u16, usize> = HashMap::new();
 
     find_combinations(&values, &mut cache, 0, end_at)
