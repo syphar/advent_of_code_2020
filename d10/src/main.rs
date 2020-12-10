@@ -50,8 +50,6 @@ fn run2(input: &Vec<u16>) -> usize {
     for v in input.iter() {
         values[*v as usize] = true;
     }
-    println!("vec: {:?}", values);
-
     let end_at = max + 3;
 
     find_combinations(&values, 0, end_at)
