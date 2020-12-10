@@ -2,10 +2,8 @@
 extern crate lazy_static;
 
 use counter::Counter;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::iter::FromIterator;
 
 fn main() {
     let file = File::open("input.txt").unwrap();
@@ -33,13 +31,13 @@ fn run(input: &Vec<u16>) -> usize {
     counter.get(&1).unwrap_or(&0) * counter.get(&3).unwrap_or(&0)
 }
 
-fn find_combinations(values: &HashSet<u16>, start_at: u16, end_at: u16) -> usize {
+fn find_combinations(values: &[bool], start_at: u16, end_at: u16) -> usize {
     let mut count = 0;
     for step in 1..=3 {
         let test = start_at + step;
         if test == end_at {
             count = 1;
-        } else if values.contains(&test) {
+        } else if (test as usize) < values.len() && values[test as usize] == true {
             count += find_combinations(&values, test, end_at);
         }
     }
@@ -47,8 +45,14 @@ fn find_combinations(values: &HashSet<u16>, start_at: u16, end_at: u16) -> usize
 }
 
 fn run2(input: &Vec<u16>) -> usize {
-    let values = HashSet::from_iter(input.iter().cloned());
-    let end_at = values.iter().max().unwrap() + 3;
+    let max = input.iter().max().unwrap();
+    let mut values = vec![false; (*max as usize) + 1];
+    for v in input.iter() {
+        values[*v as usize] = true;
+    }
+    println!("vec: {:?}", values);
+
+    let end_at = max + 3;
 
     find_combinations(&values, 0, end_at)
 }
