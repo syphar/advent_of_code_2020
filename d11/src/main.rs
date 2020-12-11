@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate itertools;
+
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -35,40 +38,33 @@ fn print_seats(seats: &Vec<Vec<Option<bool>>>) {
 }
 
 fn read_seats(lines: &Vec<String>) -> Vec<Vec<Option<bool>>> {
-    let mut seats: Vec<Vec<Option<bool>>> = Vec::new();
-    for line in lines {
-        seats.push(
-            line.chars()
+    lines
+        .iter()
+        .map(|l| {
+            l.chars()
                 .map(|c| match c {
                     'L' => Some(false),
                     '#' => Some(true),
                     _ => None,
                 })
-                .collect(),
-        );
-    }
-
-    seats
+                .collect()
+        })
+        .collect()
 }
 
 fn count_other_occupied_seats_2(seats: &Vec<Vec<Option<bool>>>, row: usize, col: usize) -> u8 {
-    let directions = vec![
-        (-1, 0),
-        (1, 0),
-        (0, -1),
-        (0, 1),
-        (-1, -1),
-        (-1, 1),
-        (1, -1),
-        (1, 1),
-    ];
+    lazy_static! {
+        static ref DIRECTIONS: Vec<(i64, i64)> = iproduct!(-1..=1, -1..=1)
+            .filter(|(r, c)| !(*r == 0 && *c == 0))
+            .collect();
+    }
 
     let width: i64 = seats[0].len() as i64;
     let height: i64 = seats.len() as i64;
 
     let mut count = 0;
 
-    for (rd, cd) in directions {
+    for (rd, cd) in DIRECTIONS.iter() {
         let mut r = row as i64;
         let mut c = col as i64;
         loop {
