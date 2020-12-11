@@ -103,5 +103,8 @@ mod tests {
 
         assert_eq!(seats.set(2, 1, Some(true)), Ok(()));
         assert_eq!(seats.get(2, 1), Ok(Some(true)));
+
+        assert!(seats.get(5, 5).is_err());
+        assert!(seats.get(3, 2).is_err());
     }
 }

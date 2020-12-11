@@ -74,40 +74,36 @@ fn run(
         did_change = false;
 
         let mut new_seats = Seats::new(seats.rows(), seats.cols());
-        for row in 0..old_seats.rows() {
-            for col in 0..old_seats.cols() {
-                new_seats
-                    .set(
-                        row as i64,
-                        col as i64,
-                        match old_seats.get(row as i64, col as i64).unwrap() {
-                            None => None, // floor
-                            Some(false) => {
-                                // If a seat is empty (L) and there are no occupied
-                                // seats adjacent to it, the seat becomes occupied.
-                                if seat_check_function(&old_seats, row, col) == 0 {
-                                    did_change = true;
-                                    Some(true)
-                                } else {
-                                    Some(false)
-                                }
+        for (row, col) in iproduct!(0..old_seats.rows(), 0..old_seats.cols()) {
+            new_seats
+                .set(
+                    row as i64,
+                    col as i64,
+                    match old_seats.get(row as i64, col as i64).unwrap() {
+                        None => None, // floor, leave empty
+                        Some(false) => {
+                            // If a seat is empty (L) and there are no occupied
+                            // seats adjacent to it, the seat becomes occupied.
+                            if seat_check_function(&old_seats, row, col) == 0 {
+                                did_change = true;
+                                Some(true)
+                            } else {
+                                Some(false)
                             }
-                            Some(true) => {
-                                // If a seat is occupied (#) and X our or more seats
-                                // adjacent to it are also occupied, the seat becomes empty.
-                                if seat_check_function(&old_seats, row, col)
-                                    >= too_many_seats_visible
-                                {
-                                    did_change = true;
-                                    Some(false)
-                                } else {
-                                    Some(true)
-                                }
+                        }
+                        Some(true) => {
+                            // If a seat is occupied (#) and X our or more seats
+                            // adjacent to it are also occupied, the seat becomes empty.
+                            if seat_check_function(&old_seats, row, col) >= too_many_seats_visible {
+                                did_change = true;
+                                Some(false)
+                            } else {
+                                Some(true)
                             }
-                        },
-                    )
-                    .unwrap();
-            }
+                        }
+                    },
+                )
+                .unwrap();
         }
         old_seats = new_seats;
     }
