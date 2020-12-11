@@ -12,7 +12,7 @@ fn main() {
         .map(|line| line.unwrap())
         .collect();
 
-    println!("part 1:{:?}", run(&input));
+    println!("part 1:{:?}", run(&input, 4));
 }
 
 fn print_seats(seats: &Vec<Vec<Option<bool>>>) {
@@ -61,32 +61,23 @@ fn count_other_occupied_seats(seats: &Vec<Vec<Option<bool>>>, row: usize, col: u
         (row_ + 1, col_ + 1),
     ];
 
-    let mut count = 0;
+    let width: i64 = seats[0].len() as i64;
+    let height: i64 = seats.len() as i64;
 
-    for (r, c) in surrounding_seats {
-        if r < 0 || c < 0 {
-            continue;
-        }
-        if let Some(row) = seats.get(r as usize) {
-            if let Some(value) = row.get(c as usize) {
-                if *value == Some(true) {
-                    count += 1;
-                }
-            }
-        }
-    }
-    count
+    surrounding_seats
+        .iter()
+        .filter(|(r, c)| (*r >= 0 && *c >= 0 && *r < height && *c < width))
+        .map(|(r, c)| seats[*r as usize][*c as usize])
+        .filter(|v| *v == Some(true))
+        .count() as u8
 }
 
-fn run(lines: &Vec<String>) -> usize {
+fn run(lines: &Vec<String>, too_many_seats_visible: u8) -> usize {
     let mut seats = read_seats(&lines);
 
     let mut did_change = true;
     while did_change {
         did_change = false;
-
-        // println!("\n\n");
-        // print_seats(&seats);
 
         let mut new_seats: Vec<Vec<Option<bool>>> = Vec::new();
 
@@ -109,7 +100,7 @@ fn run(lines: &Vec<String>) -> usize {
                     Some(true) => {
                         // If a seat is occupied (#) and four or more seats
                         // adjacent to it are also occupied, the seat becomes empty.
-                        if count_other_occupied_seats(&seats, row, col) >= 4 {
+                        if count_other_occupied_seats(&seats, row, col) >= too_many_seats_visible {
                             did_change = true;
                             Some(false)
                         } else {
@@ -123,11 +114,10 @@ fn run(lines: &Vec<String>) -> usize {
         seats = new_seats;
     }
 
-    let mut count = 0;
-    for row in seats.iter() {
-        count += row.iter().filter(|v| **v == Some(true)).count();
-    }
-    count
+    seats
+        .iter()
+        .map(|row| row.iter().filter(|v| **v == Some(true)).count())
+        .sum()
 }
 
 #[cfg(test)]
@@ -154,7 +144,7 @@ mod tests {
 
     #[test]
     fn part_1_works() {
-        assert_eq!(run(&TEST_DATA), 37);
+        assert_eq!(run(&TEST_DATA, 4), 37);
     }
 
     // #[test]
