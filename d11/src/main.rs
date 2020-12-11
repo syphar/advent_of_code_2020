@@ -1,10 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
 
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::iter::FromIterator;
 
 fn main() {
     let file = File::open("input.txt").unwrap();
@@ -36,7 +34,7 @@ fn count_other_occupied_seats(seats: &Vec<Vec<Option<bool>>>, row: usize, col: u
     let row_ = row as i64;
     let col_ = col as i64;
 
-    let surrounding_seats: HashSet<(i64, i64)> = HashSet::from_iter(vec![
+    let surrounding_seats = vec![
         (row_ - 1, col_),
         (row_ + 1, col_),
         (row_, col_ - 1),
@@ -45,18 +43,22 @@ fn count_other_occupied_seats(seats: &Vec<Vec<Option<bool>>>, row: usize, col: u
         (row_ - 1, col_ + 1),
         (row_ + 1, col_ - 1),
         (row_ + 1, col_ + 1),
-    ]);
+    ];
 
     let mut count = 0;
-    for r in 0..seats.len() {
-        for c in 0..seats[r].len() {
-            if surrounding_seats.contains(&(r as i64, c as i64)) && seats[r][c] == Some(true) {
-                count += 1;
+
+    for (r, c) in surrounding_seats {
+        if r < 0 || c < 0 {
+            continue;
+        }
+        if let Some(row) = seats.get(r as usize) {
+            if let Some(value) = row.get(c as usize) {
+                if *value == Some(true) {
+                    count += 1;
+                }
             }
         }
     }
-
-    // println!("index: {}/{} = {}", row, col, count);
     count
 }
 
@@ -66,7 +68,7 @@ fn run(lines: &Vec<String>) -> usize {
         seats.push(
             line.chars()
                 .map(|c| match c {
-                    '#' => Some(false),
+                    'L' => Some(false),
                     _ => None,
                 })
                 .collect(),
@@ -84,6 +86,7 @@ fn run(lines: &Vec<String>) -> usize {
 
         for (row, line) in seats.iter().enumerate() {
             let mut new_line: Vec<Option<bool>> = Vec::new();
+
             for (col, value) in line.iter().enumerate() {
                 new_line.push(match value {
                     None => None, // floor
@@ -131,16 +134,16 @@ mod tests {
 
     lazy_static! {
         static ref TEST_DATA: Vec<String> = vec![
-            "#.##.##.##",
-            "#######.##",
-            "#.#.#..#..",
-            "####.##.##",
-            "#.##.##.##",
-            "#.#####.##",
-            "..#.#.....",
-            "##########",
-            "#.######.#",
-            "#.#####.##",
+            "L.LL.LL.LL",
+            "LLLLLLL.LL",
+            "L.L.L..L..",
+            "LLLL.LL.LL",
+            "L.LL.LL.LL",
+            "L.LLLLL.LL",
+            "..L.L.....",
+            "LLLLLLLLLL",
+            "L.LLLLLL.L",
+            "L.LLLLL.LL",
         ]
         .iter()
         .map(|s| s.to_string())
