@@ -103,7 +103,7 @@ fn run(
                         }
                     },
                 )
-                .unwrap();
+                .unwrap(); // error never happens since I iterate over the known cells
         }
         old_seats = new_seats;
     }
