@@ -30,6 +30,22 @@ fn print_seats(seats: &Vec<Vec<Option<bool>>>) {
     }
 }
 
+fn read_seats(lines: &Vec<String>) -> Vec<Vec<Option<bool>>> {
+    let mut seats: Vec<Vec<Option<bool>>> = Vec::new();
+    for line in lines {
+        seats.push(
+            line.chars()
+                .map(|c| match c {
+                    'L' => Some(false),
+                    _ => None,
+                })
+                .collect(),
+        );
+    }
+
+    seats
+}
+
 fn count_other_occupied_seats(seats: &Vec<Vec<Option<bool>>>, row: usize, col: usize) -> u8 {
     let row_ = row as i64;
     let col_ = col as i64;
@@ -63,17 +79,7 @@ fn count_other_occupied_seats(seats: &Vec<Vec<Option<bool>>>, row: usize, col: u
 }
 
 fn run(lines: &Vec<String>) -> usize {
-    let mut seats: Vec<Vec<Option<bool>>> = Vec::new();
-    for line in lines {
-        seats.push(
-            line.chars()
-                .map(|c| match c {
-                    'L' => Some(false),
-                    _ => None,
-                })
-                .collect(),
-        );
-    }
+    let mut seats = read_seats(&lines);
 
     let mut did_change = true;
     while did_change {
@@ -119,11 +125,7 @@ fn run(lines: &Vec<String>) -> usize {
 
     let mut count = 0;
     for row in seats.iter() {
-        for col in row.iter() {
-            if *col == Some(true) {
-                count += 1;
-            }
-        }
+        count += row.iter().filter(|v| **v == Some(true)).count();
     }
     count
 }
@@ -154,4 +156,9 @@ mod tests {
     fn part_1_works() {
         assert_eq!(run(&TEST_DATA), 37);
     }
+
+    // #[test]
+    // fn part_2_works() {
+    //     assert_eq!(run2(&TEST_DATA), 26);
+    // }
 }
