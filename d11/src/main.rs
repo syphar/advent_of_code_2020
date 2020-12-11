@@ -70,7 +70,6 @@ fn run(
     let mut old_seats = seats.clone();
 
     let mut did_change = true;
-    // for _ in 0..3 {
     while did_change {
         did_change = false;
 
