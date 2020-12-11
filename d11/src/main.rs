@@ -21,13 +21,13 @@ fn main() {
     );
 }
 
-fn count_other_occupied_seats_2(seats: &Seats, row: usize, col: usize) -> u8 {
-    lazy_static! {
-        static ref DIRECTIONS: Vec<(i64, i64)> = iproduct!(-1..=1, -1..=1)
-            .filter(|(r, c)| !(*r == 0 && *c == 0))
-            .collect();
-    }
+lazy_static! {
+    static ref DIRECTIONS: Vec<(i64, i64)> = iproduct!(-1..=1, -1..=1)
+        .filter(|(r, c)| !(*r == 0 && *c == 0))
+        .collect();
+}
 
+fn count_other_occupied_seats_2(seats: &Seats, row: usize, col: usize) -> u8 {
     let mut count = 0;
 
     for (rd, cd) in DIRECTIONS.iter() {
@@ -37,14 +37,14 @@ fn count_other_occupied_seats_2(seats: &Seats, row: usize, col: usize) -> u8 {
             r += rd;
             c += cd;
 
-            if r < 0 || c < 0 || r >= (seats.rows() as i64) || c >= (seats.cols() as i64) {
-                break;
-            }
-
-            if let Some(value) = seats.get(r, c).unwrap() {
-                if value == true {
-                    count += 1;
+            if let Ok(cell) = seats.get(r, c) {
+                if let Some(value) = cell {
+                    if value == true {
+                        count += 1;
+                    }
+                    break;
                 }
+            } else {
                 break;
             }
         }
@@ -54,24 +54,10 @@ fn count_other_occupied_seats_2(seats: &Seats, row: usize, col: usize) -> u8 {
 }
 
 fn count_other_occupied_seats(seats: &Seats, row: usize, col: usize) -> u8 {
-    let row_ = row as i64;
-    let col_ = col as i64;
-
-    let surrounding_seats: Vec<(i64, i64)> = vec![
-        (row_ - 1, col_),
-        (row_ + 1, col_),
-        (row_, col_ - 1),
-        (row_, col_ + 1),
-        (row_ - 1, col_ - 1),
-        (row_ - 1, col_ + 1),
-        (row_ + 1, col_ - 1),
-        (row_ + 1, col_ + 1),
-    ];
-
-    surrounding_seats
+    DIRECTIONS
         .iter()
-        .filter(|(r, c)| *r >= 0 && *c >= 0 && *r < seats.rows() as i64 && *c < seats.cols() as i64)
-        .filter_map(|(r, c)| seats.get(*r as i64, *c as i64).ok())
+        .map(|(rd, cd)| ((row as i64) + rd, (col as i64) + cd))
+        .filter_map(|(r, c)| seats.get(r, c).ok())
         .filter(|v| *v == Some(true))
         .count() as u8
 }
