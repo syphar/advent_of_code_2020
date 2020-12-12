@@ -36,7 +36,7 @@ fn main() {
 
     if let Ok(actions) = read_actions(&input) {
         println!("part 1: {:?}", run(&actions));
-        //     println!("part 2: {:?}", try_fix(&commands));
+        println!("part 2: {:?}", run_2(&actions));
     }
 }
 
@@ -72,11 +72,6 @@ fn run(actions: &Vec<Action>) -> Result<i64, SimpleError> {
     let mut current_heading = 90;
 
     for action in actions {
-        println!(
-            "\n\nbefore E{} / N{} => {}",
-            position_east_west, position_north_south, current_heading
-        );
-        println!("action {:?}", action);
         match action {
             Action::Move(direction, value) => match direction {
                 Direction::North => {
@@ -118,13 +113,79 @@ fn run(actions: &Vec<Action>) -> Result<i64, SimpleError> {
                 }
             },
         }
-        println!(
-            "after E{} / N{} => {}",
-            position_east_west, position_north_south, current_heading
-        );
     }
 
     Ok(position_east_west.abs() + position_north_south.abs())
+}
+
+fn new_heading_for_waypoint(pos: (i64, i64), turn: i64) -> Result<(i64, i64), SimpleError> {
+    match turn {
+        90 | -270 => Ok((pos.1, pos.0 * -1)),
+        180 | -180 => Ok((pos.0 * -1, pos.1 * -1)),
+        270 | -90 => Ok((pos.1 * -1, pos.0)),
+        0 => Ok((pos.0, pos.1)),
+        _ => Err(SimpleError::new("unknown turn")),
+    }
+}
+
+fn run_2(actions: &Vec<Action>) -> Result<i64, SimpleError> {
+    let mut waypoint_position: (i64, i64) = (10, 1);
+    let mut ship_position_east_west: i64 = 0;
+    let mut ship_position_north_south: i64 = 0;
+
+    for action in actions {
+        println!("\n\nBEFORE:");
+        println!(
+            "waypoint E{} / N{}",
+            waypoint_position.0, waypoint_position.1
+        );
+        println!(
+            "ship E{} / N{}",
+            ship_position_east_west, ship_position_north_south
+        );
+        println!("action: {:?}", action);
+
+        match action {
+            Action::Move(direction, value) => match direction {
+                Direction::North => {
+                    waypoint_position.1 += value;
+                }
+                Direction::South => {
+                    waypoint_position.1 -= value;
+                }
+                Direction::East => {
+                    waypoint_position.0 += value;
+                }
+                Direction::West => {
+                    waypoint_position.0 -= value;
+                }
+            },
+            Action::Forward(value) => {
+                ship_position_east_west += value * waypoint_position.0;
+                ship_position_north_south += value * waypoint_position.1;
+            }
+            Action::Turn(direction, value) => match direction {
+                TurnDirection::Left => {
+                    waypoint_position = new_heading_for_waypoint(waypoint_position, value * -1)?;
+                }
+                TurnDirection::Right => {
+                    waypoint_position = new_heading_for_waypoint(waypoint_position, *value)?;
+                }
+            },
+        }
+
+        println!("AFTER:");
+        println!(
+            "waypoint E{} / N{}",
+            waypoint_position.0, waypoint_position.1
+        );
+        println!(
+            "ship E{} / N{}",
+            ship_position_east_west, ship_position_north_south
+        );
+    }
+
+    Ok(ship_position_east_west.abs() + ship_position_north_south.abs())
 }
 
 #[cfg(test)]
@@ -175,6 +236,14 @@ mod tests {
     }
 
     #[test]
+    fn new_waypoint_heading() {
+        assert_eq!(new_heading_for_waypoint((10, 4), 90), Ok((4, -10)));
+        assert_eq!(new_heading_for_waypoint((4, -10), 90), Ok((-10, -4)));
+        assert_eq!(new_heading_for_waypoint((-10, -4), 90), Ok((-4, 10)));
+        assert_eq!(new_heading_for_waypoint((-4, 10), 90), Ok((10, 4)));
+    }
+
+    #[test]
     fn test_read_actions() {
         let actions = read_actions(&TEST_DATA).unwrap();
         assert_eq!(actions[0], Action::Forward(10));
@@ -188,5 +257,11 @@ mod tests {
     fn part_1_works() {
         let actions = read_actions(&TEST_DATA).unwrap();
         assert_eq!(run(&actions), Ok(25));
+    }
+
+    #[test]
+    fn part_2_works() {
+        let actions = read_actions(&TEST_DATA).unwrap();
+        assert_eq!(run_2(&actions), Ok(286));
     }
 }
