@@ -60,12 +60,13 @@ where
         };
 
         match v {
-            0 => Heading::North,
-            90 => Heading::East,
-            180 => Heading::South,
-            270 => Heading::West,
+            0..=89 => Heading::North,
+            90..=179 => Heading::East,
+            180..=269 => Heading::South,
+            270..=359 => Heading::West,
             360 => Heading::North,
             _ => {
+                // This cannot happen because of the code before
                 panic!(format!("unknown heading value: {}", value));
             }
         }
@@ -139,15 +140,13 @@ impl FromStr for Action {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
-    #[test]
-    fn test_actions_from_str() {
-        assert_eq!("F10".parse::<Action>(), Ok(Action::Forward(10)));
-        assert_eq!("N3".parse::<Action>(), Ok(Action::Move(Heading::North, 3)));
-        assert_eq!(
-            "R90".parse::<Action>(),
-            Ok(Action::Turn(TurnDirection::Right, 90))
-        );
+    #[test_case("F10", Action::Forward(10))]
+    #[test_case("N3", Action::Move(Heading::North, 3))]
+    #[test_case("R90", Action::Turn(TurnDirection::Right, 90))]
+    fn test_actions_from_str(s: &str, expected: Action) {
+        assert_eq!(s.parse::<Action>(), Ok(expected));
     }
 
     #[test]
@@ -163,34 +162,35 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_heading_from() {
-        assert_eq!(Heading::from(-450), Heading::West);
-        assert_eq!(Heading::from(-360), Heading::North);
-        assert_eq!(Heading::from(-270), Heading::East);
-        assert_eq!(Heading::from(-180), Heading::South);
-        assert_eq!(Heading::from(-90), Heading::West);
-        assert_eq!(Heading::from(0), Heading::North);
-        assert_eq!(Heading::from(90), Heading::East);
-        assert_eq!(Heading::from(180), Heading::South);
-        assert_eq!(Heading::from(270), Heading::West);
-        assert_eq!(Heading::from(360), Heading::North);
-        assert_eq!(Heading::from(450), Heading::East);
+    #[test_case(-450, Heading::West ;"-450" )]
+    #[test_case(-360, Heading::North ; "-360" )]
+    #[test_case(-270, Heading::East; "-270" )]
+    #[test_case(-180, Heading::South; "-180" )]
+    #[test_case(-90, Heading::West; "-90" )]
+    #[test_case(0, Heading::North)]
+    #[test_case(90, Heading::East)]
+    #[test_case(180, Heading::South)]
+    #[test_case(188, Heading::South)]
+    #[test_case(270, Heading::West)]
+    #[test_case(300, Heading::West)]
+    #[test_case(360, Heading::North)]
+    #[test_case(450, Heading::East)]
+    fn test_heading_from(input: i16, expected: Heading) {
+        assert_eq!(Heading::from(input), expected);
     }
 
-    #[test]
-    fn test_heading_turn() {
-        assert_eq!(Heading::West.turn(0), Heading::West);
-        assert_eq!(Heading::West.turn(90), Heading::North);
-        assert_eq!(Heading::West.turn(180), Heading::East);
-        assert_eq!(Heading::West.turn(270), Heading::South);
-        assert_eq!(Heading::West.turn(360), Heading::West);
-        assert_eq!(Heading::West.turn(450), Heading::North);
-
-        assert_eq!(Heading::West.turn(-90), Heading::South);
-        assert_eq!(Heading::West.turn(-180), Heading::East);
-        assert_eq!(Heading::West.turn(-270), Heading::North);
-        assert_eq!(Heading::West.turn(-360), Heading::West);
-        assert_eq!(Heading::West.turn(-450), Heading::South);
+    #[test_case(Heading::West, 0, Heading::West)]
+    #[test_case(Heading::West, 90, Heading::North)]
+    #[test_case(Heading::West, 180, Heading::East)]
+    #[test_case(Heading::West, 270, Heading::South)]
+    #[test_case(Heading::West, 360, Heading::West)]
+    #[test_case(Heading::West, 450, Heading::North)]
+    #[test_case(Heading::West, -90, Heading::South; "west/-90")]
+    #[test_case(Heading::West, -180, Heading::East; "west/-180")]
+    #[test_case(Heading::West, -270, Heading::North; "west/-270")]
+    #[test_case(Heading::West, -360, Heading::West; "west/-360" )]
+    #[test_case(Heading::West, -450, Heading::South; "west/-450")]
+    fn test_heading_turn(initial: Heading, turn: i64, expected: Heading) {
+        assert_eq!(initial.turn(turn), expected);
     }
 }
