@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 use d12::{Action, Heading, Position, TurnDirection};
 use simple_error::SimpleError;
 use std::fs::File;
@@ -84,6 +81,7 @@ fn run_2(actions: &Vec<Action>) -> Result<i64, SimpleError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lazy_static::lazy_static;
 
     lazy_static! {
         static ref TEST_DATA: Vec<Action> = vec!["F10", "N3", "F7", "R90", "F11",]
