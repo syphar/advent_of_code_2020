@@ -44,29 +44,29 @@ pub enum Heading {
     West,
 }
 
-impl From<u16> for Heading {
-    fn from(value: u16) -> Self {
-        match value % 360 {
+impl From<i64> for Heading {
+    fn from(value: i64) -> Self {
+        let v = if value >= 0 {
+            value % 360
+        } else {
+            360 - (value.abs() % 360)
+        };
+        match v {
             0 => Heading::North,
             90 => Heading::East,
             180 => Heading::South,
             270 => Heading::West,
+            360 => Heading::North,
             _ => {
-                panic!("unknown heading value");
+                panic!(format!("unknown heading value: {} ({})", value, v));
             }
         }
     }
 }
 
-impl From<i64> for Heading {
-    fn from(value: i64) -> Self {
-        Heading::from((value.abs() % 360) as u16)
-    }
-}
-
 impl From<i32> for Heading {
     fn from(value: i32) -> Self {
-        Heading::from((value.abs() % 360) as u16)
+        Heading::from(value as i64)
     }
 }
 
@@ -163,6 +163,11 @@ mod tests {
 
     #[test]
     fn test_heading_from() {
+        assert_eq!(Heading::from(-450), Heading::West);
+        assert_eq!(Heading::from(-360), Heading::North);
+        assert_eq!(Heading::from(-270), Heading::East);
+        assert_eq!(Heading::from(-180), Heading::South);
+        assert_eq!(Heading::from(-90), Heading::West);
         assert_eq!(Heading::from(0), Heading::North);
         assert_eq!(Heading::from(90), Heading::East);
         assert_eq!(Heading::from(180), Heading::South);
