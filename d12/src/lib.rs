@@ -1,5 +1,7 @@
-use num::Signed;
+use num::FromPrimitive;
+use num::{Integer, Signed};
 use simple_error::SimpleError;
+use std::fmt::Debug;
 use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -44,31 +46,37 @@ pub enum Heading {
     West,
 }
 
-impl From<i64> for Heading {
-    fn from(value: i64) -> Self {
-        let v = if value >= 0 {
-            value % 360
-        } else {
-            360 - (value.abs() % 360)
-        };
-        match v {
-            0 => Heading::North,
-            90 => Heading::East,
-            180 => Heading::South,
-            270 => Heading::West,
-            360 => Heading::North,
-            _ => {
-                panic!(format!("unknown heading value: {} ({})", value, v));
-            }
-        }
+impl<T> From<T> for Heading
+where
+    T: Signed + Integer + Debug,
+{
+    fn from(value: T) -> Self {
+        println!("{:?}", value);
+        Heading::North
+
+        // let v = if value >= 0 {
+        //     value % 360
+        // } else {
+        //     360 - (value.abs() % 360)
+        // };
+        // match v {
+        //     0 => Heading::North,
+        //     90 => Heading::East,
+        //     180 => Heading::South,
+        //     270 => Heading::West,
+        //     360 => Heading::North,
+        //     _ => {
+        //         panic!(format!("unknown heading value: {} ({})", value, v));
+        //     }
+        // }
     }
 }
 
-impl From<i32> for Heading {
-    fn from(value: i32) -> Self {
-        Heading::from(value as i64)
-    }
-}
+// impl From<i32> for Heading {
+//     fn from(value: i32) -> Self {
+//         Heading::from(value as i64)
+//     }
+// }
 
 impl From<&Heading> for u16 {
     fn from(value: &Heading) -> Self {
