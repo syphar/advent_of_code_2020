@@ -134,17 +134,6 @@ fn run_2(actions: &Vec<Action>) -> Result<i64, SimpleError> {
     let mut ship_position_north_south: i64 = 0;
 
     for action in actions {
-        println!("\n\nBEFORE:");
-        println!(
-            "waypoint E{} / N{}",
-            waypoint_position.0, waypoint_position.1
-        );
-        println!(
-            "ship E{} / N{}",
-            ship_position_east_west, ship_position_north_south
-        );
-        println!("action: {:?}", action);
-
         match action {
             Action::Move(direction, value) => match direction {
                 Direction::North => {
@@ -173,16 +162,6 @@ fn run_2(actions: &Vec<Action>) -> Result<i64, SimpleError> {
                 }
             },
         }
-
-        println!("AFTER:");
-        println!(
-            "waypoint E{} / N{}",
-            waypoint_position.0, waypoint_position.1
-        );
-        println!(
-            "ship E{} / N{}",
-            ship_position_east_west, ship_position_north_south
-        );
     }
 
     Ok(ship_position_east_west.abs() + ship_position_north_south.abs())
