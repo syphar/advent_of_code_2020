@@ -58,6 +58,14 @@ fn read_actions(lines: &Vec<String>) -> Result<Vec<Action>, SimpleError> {
         .collect()
 }
 
+fn new_heading(current_heading: i64, diff: i64) -> i64 {
+    if diff < 0 {
+        (current_heading + (360 + diff)).abs() % 360
+    } else {
+        (current_heading + diff).abs() % 360
+    }
+}
+
 fn run(actions: &Vec<Action>) -> Result<i64, SimpleError> {
     let mut position_east_west: i64 = 0;
     let mut position_north_south: i64 = 0;
@@ -86,10 +94,10 @@ fn run(actions: &Vec<Action>) -> Result<i64, SimpleError> {
             },
             Action::Turn(direction, value) => match direction {
                 TurnDirection::Left => {
-                    current_heading = (current_heading - value).abs() % 360;
+                    current_heading = new_heading(current_heading, value * -1);
                 }
                 TurnDirection::Right => {
-                    current_heading = (current_heading + value).abs() % 360;
+                    current_heading = new_heading(current_heading, *value);
                 }
             },
             Action::Forward(value) => match current_heading {
@@ -128,6 +136,42 @@ mod tests {
             .iter()
             .map(|s| s.to_string())
             .collect();
+    }
+
+    #[test]
+    fn test_new_heading() {
+        assert_eq!(new_heading(0, 0), 0);
+        assert_eq!(new_heading(0, 90), 90);
+        assert_eq!(new_heading(0, 180), 180);
+        assert_eq!(new_heading(0, 270), 270);
+        assert_eq!(new_heading(0, 360), 0);
+
+        assert_eq!(new_heading(90, 0), 90);
+        assert_eq!(new_heading(90, 90), 180);
+        assert_eq!(new_heading(90, 180), 270);
+        assert_eq!(new_heading(90, 270), 0);
+        assert_eq!(new_heading(90, 360), 90);
+
+        assert_eq!(new_heading(180, 0), 180);
+        assert_eq!(new_heading(180, 90), 270);
+        assert_eq!(new_heading(180, 180), 0);
+        assert_eq!(new_heading(180, 270), 90);
+        assert_eq!(new_heading(180, 360), 180);
+
+        assert_eq!(new_heading(0, -90), 270);
+        assert_eq!(new_heading(0, -180), 180);
+        assert_eq!(new_heading(0, -270), 90);
+        assert_eq!(new_heading(0, -360), 0);
+
+        assert_eq!(new_heading(90, -90), 0);
+        assert_eq!(new_heading(90, -180), 270);
+        assert_eq!(new_heading(90, -270), 180);
+        assert_eq!(new_heading(90, -360), 90);
+
+        assert_eq!(new_heading(180, -90), 90);
+        assert_eq!(new_heading(180, -180), 0);
+        assert_eq!(new_heading(180, -270), 270);
+        assert_eq!(new_heading(180, -360), 180);
     }
 
     #[test]
