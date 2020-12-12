@@ -1,7 +1,7 @@
-use num::FromPrimitive;
+use num::ToPrimitive;
 use num::{Integer, Signed};
 use simple_error::SimpleError;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -48,38 +48,32 @@ pub enum Heading {
 
 impl<T> From<T> for Heading
 where
-    T: Signed + Integer + Debug,
+    T: Signed + Integer + ToPrimitive + Display,
 {
     fn from(value: T) -> Self {
-        println!("{:?}", value);
-        Heading::North
+        let value_ = ToPrimitive::to_i64(&value).unwrap();
 
-        // let v = if value >= 0 {
-        //     value % 360
-        // } else {
-        //     360 - (value.abs() % 360)
-        // };
-        // match v {
-        //     0 => Heading::North,
-        //     90 => Heading::East,
-        //     180 => Heading::South,
-        //     270 => Heading::West,
-        //     360 => Heading::North,
-        //     _ => {
-        //         panic!(format!("unknown heading value: {} ({})", value, v));
-        //     }
-        // }
+        let v = if value_ >= 0 {
+            value_ % 360
+        } else {
+            360 - (value_.abs() % 360)
+        };
+
+        match v {
+            0 => Heading::North,
+            90 => Heading::East,
+            180 => Heading::South,
+            270 => Heading::West,
+            360 => Heading::North,
+            _ => {
+                panic!(format!("unknown heading value: {}", value));
+            }
+        }
     }
 }
 
-// impl From<i32> for Heading {
-//     fn from(value: i32) -> Self {
-//         Heading::from(value as i64)
-//     }
-// }
-
-impl From<&Heading> for u16 {
-    fn from(value: &Heading) -> Self {
+impl From<Heading> for u16 {
+    fn from(value: Heading) -> Self {
         match value {
             Heading::North => 0,
             Heading::East => 90,
@@ -91,7 +85,7 @@ impl From<&Heading> for u16 {
 
 impl Heading {
     pub fn turn(&self, by: i64) -> Self {
-        let mut heading = u16::from(self) as i64;
+        let mut heading = u16::from(*self) as i64;
         if by < 0 {
             heading = (heading + (360 + by)).abs() % 360
         } else {
