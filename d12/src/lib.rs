@@ -179,5 +179,11 @@ mod tests {
         assert_eq!(Heading::West.turn(270), Heading::South);
         assert_eq!(Heading::West.turn(360), Heading::West);
         assert_eq!(Heading::West.turn(450), Heading::North);
+
+        assert_eq!(Heading::West.turn(-90), Heading::South);
+        assert_eq!(Heading::West.turn(-180), Heading::East);
+        assert_eq!(Heading::West.turn(-270), Heading::North);
+        assert_eq!(Heading::West.turn(-360), Heading::West);
+        assert_eq!(Heading::West.turn(-450), Heading::South);
     }
 }
