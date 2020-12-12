@@ -1,7 +1,6 @@
 use num::ToPrimitive;
 use num::{Integer, Signed};
 use simple_error::SimpleError;
-use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -48,7 +47,7 @@ pub enum Heading {
 
 impl<T> From<T> for Heading
 where
-    T: Signed + Integer + ToPrimitive + Display,
+    T: Signed + Integer + ToPrimitive,
 {
     fn from(value: T) -> Self {
         let value_ = ToPrimitive::to_i64(&value).unwrap();
@@ -67,7 +66,7 @@ where
             360 => Heading::North,
             _ => {
                 // This cannot happen because of the code before
-                panic!(format!("unknown heading value: {}", value));
+                panic!("unknown heading value");
             }
         }
     }
