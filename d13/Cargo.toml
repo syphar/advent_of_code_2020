@@ -8,3 +8,6 @@ edition = "2018"
 
 [dev-dependencies]
 test-case = "1.0.0"
+
+[dependencies]
+simple-error = "0.2.2"
