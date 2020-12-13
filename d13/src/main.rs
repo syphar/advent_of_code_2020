@@ -32,7 +32,7 @@ fn run(time: u64, buses: &[u16]) -> u64 {
     }
 }
 
-fn chinese_remainder(residues: &[i64], modulii: &[i64]) -> Option<i64> {
+fn chinese_remainder(input: &HashMap<i64, i64>) -> Option<i64> {
     fn egcd(a: i64, b: i64) -> (i64, i64, i64) {
         if a == 0 {
             (b, 0, 1)
@@ -52,11 +52,11 @@ fn chinese_remainder(residues: &[i64], modulii: &[i64]) -> Option<i64> {
     }
 
     // https://rosettacode.org/wiki/Chinese_remainder_theorem#Rust
-    let prod = modulii.iter().product::<i64>();
+    let prod = input.values().product::<i64>();
 
     let mut sum = 0;
 
-    for (&residue, &modulus) in residues.iter().zip(modulii) {
+    for (&residue, &modulus) in input.iter() {
         let p = prod / modulus;
         sum += residue * mod_inv(p, modulus)? * p
     }
@@ -73,12 +73,7 @@ fn run_2(input: &[&str]) -> Result<i64, SimpleError> {
         .map(|(i, v)| (i as i64, v.unwrap()))
         .collect();
 
-    println!("{:?}", parsed_input);
-
-    let residues: Vec<i64> = parsed_input.keys().cloned().collect();
-    let modulii: Vec<i64> = parsed_input.values().cloned().collect();
-
-    if let Some(result) = chinese_remainder(&residues, &modulii) {
+    if let Some(result) = chinese_remainder(&parsed_input) {
         Ok(parsed_input.values().product::<i64>() - result)
     } else {
         Err(SimpleError::new("no value found"))
