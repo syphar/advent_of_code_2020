@@ -16,7 +16,7 @@ fn main() {
     println!("part1: {:?}", run(time, &lines));
 
     let lines2: Vec<&str> = input[1].split(",").collect();
-    println!("part2: {:?}", run_2(&lines2));
+    println!("part2: {:?}", run_2(&lines2, 100000000000000));
 }
 
 fn run(time: u64, buses: &[u16]) -> u64 {
@@ -30,21 +30,35 @@ fn run(time: u64, buses: &[u16]) -> u64 {
     }
 }
 
-fn run_2(input: &[&str]) -> u64 {
-    let mut t: u64 = 0;
+fn run_2(input: &[&str], start_at: u64) -> u64 {
+    let parsed_input: Vec<Option<u64>> = input.iter().map(|v| v.parse().ok()).collect();
+
+    // find biggest number and its index
+    let (biggest_number_index, biggest_number): (i64, i64) = parsed_input
+        .iter()
+        .enumerate()
+        .filter(|(_, &b)| b.is_some())
+        .map(|(i, &b)| (i as i64, b.unwrap() as i64))
+        .max_by_key(|(_, b)| *b)
+        .unwrap();
+
+    // start at a multiple of biggest number
+    let mut t: i64 = (start_at as i64 + biggest_number) - (start_at as i64 % biggest_number);
+
+    // prepare list of things to check
+    let checks: Vec<(i64, i64)> = parsed_input
+        .iter()
+        .enumerate()
+        .filter(|(_, &b)| b.is_some())
+        .map(|(i, b)| (i as i64 - biggest_number_index as i64, b.unwrap() as i64))
+        .collect();
 
     loop {
-        if input
-            .iter()
-            .enumerate()
-            .filter(|(_, &b)| b != "x")
-            .map(|(i, b)| (i as u64, b.parse::<u64>().unwrap()))
-            .all(|(i, b)| (t + i) % b == 0)
-        {
-            return t;
+        if checks.iter().all(|(i, b)| (t + i) % *b == 0) {
+            return (t - biggest_number_index) as u64;
         }
 
-        t += 1;
+        t += biggest_number;
     }
 }
 
@@ -58,13 +72,15 @@ mod tests {
         assert_eq!(run(939, &[7, 13, 59, 31, 19]), 295);
     }
 
-    #[test_case(&["17", "x", "13", "19"], 3417)]
-    #[test_case(&["67", "7", "59", "61"], 754018)]
-    #[test_case(&["67", "x", "7", "59", "61"], 779210)]
-    #[test_case(&["7", "13", "x", "x", "59", "x", "31", "19"], 1068781)]
-    #[test_case(&["67", "7", "x", "59", "61"], 1261476)]
-    #[test_case(&["1789", "37", "47", "1889"], 1202161486)]
+    #[test_case(&["17", "x", "13", "19"], 3_417)]
+    #[test_case(&["67", "7", "59", "61"], 754_018)]
+    #[test_case(&["67", "x", "7", "59", "61"], 779_210)]
+    #[test_case(&["7", "13", "x", "x", "59", "x", "31", "19"], 1_068_781)]
+    #[test_case(&["67", "7", "x", "59", "61"], 1_261_476)]
+    #[test_case(&["1789", "37", "47", "1889"], 1_202_161_486)]
     fn it_works_2(input: &[&str], expected: u64) {
-        assert_eq!(run_2(&input), expected);
+        assert_eq!(run_2(&input, 100), expected);
+        assert_eq!(run_2(&input, 10), expected);
+        assert_eq!(run_2(&input, 0), expected);
     }
 }
