@@ -34,7 +34,7 @@ fn run_2(input: &[&str], start_at: u64) -> u64 {
     let parsed_input: Vec<Option<u64>> = input.iter().map(|v| v.parse().ok()).collect();
 
     // find biggest number and its index
-    let (biggest_number_index, biggest_number): (i64, i64) = parsed_input
+    let (biggest_bus_number_index, biggest_bus_number): (i64, i64) = parsed_input
         .iter()
         .enumerate()
         .filter(|(_, &b)| b.is_some())
@@ -43,22 +43,32 @@ fn run_2(input: &[&str], start_at: u64) -> u64 {
         .unwrap();
 
     // start at a multiple of biggest number
-    let mut t: i64 = (start_at as i64 + biggest_number) - (start_at as i64 % biggest_number);
+    let mut time: i64 =
+        (start_at as i64 + biggest_bus_number) - (start_at as i64 % biggest_bus_number);
 
     // prepare list of things to check
     let checks: Vec<(i64, i64)> = parsed_input
         .iter()
         .enumerate()
         .filter(|(_, &b)| b.is_some())
-        .map(|(i, b)| (i as i64 - biggest_number_index as i64, b.unwrap() as i64))
+        .map(|(i, b)| {
+            (
+                // make check index relative to the biggest number
+                i as i64 - biggest_bus_number_index as i64,
+                b.unwrap() as i64,
+            )
+        })
         .collect();
 
     loop {
-        if checks.iter().all(|(i, b)| (t + i) % *b == 0) {
-            return (t - biggest_number_index) as u64;
+        if checks
+            .iter()
+            .all(|(relative_index, bus)| (time + relative_index) % *bus == 0)
+        {
+            return (time - biggest_bus_number_index) as u64;
         }
 
-        t += biggest_number;
+        time += biggest_bus_number;
     }
 }
 
