@@ -3,10 +3,12 @@ use regex::Regex;
 use simple_error::SimpleError;
 use std::str::FromStr;
 
+pub type BitMask = Vec<Option<bool>>;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
-    Set(u64, u64),
-    Mask(Vec<Option<bool>>),
+    SetValue(u64, u64),
+    SetMask(BitMask),
 }
 
 lazy_static! {
@@ -19,7 +21,7 @@ impl FromStr for Command {
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         if let Some(cap) = REGEX_MASK.captures(input) {
-            Ok(Command::Mask(
+            Ok(Command::SetMask(
                 cap.get(1)
                     .unwrap()
                     .as_str()
@@ -33,7 +35,7 @@ impl FromStr for Command {
                     .collect(),
             ))
         } else if let Some(cap) = REGEX_MEM.captures(input) {
-            Ok(Command::Set(
+            Ok(Command::SetValue(
                 cap.get(1).unwrap().as_str().parse().unwrap(),
                 cap.get(2).unwrap().as_str().parse().unwrap(),
             ))
@@ -58,8 +60,8 @@ mod tests {
         assert!(input.parse::<Command>().is_err());
     }
 
-    #[test_case("mem[88] = 9999", Command::Set(88, 9999))]
-    #[test_case("mask = 0X01X", Command::Mask(vec![None, Some(true), Some(false), None, Some(false)]))]
+    #[test_case("mem[88] = 9999", Command::SetValue(88, 9999))]
+    #[test_case("mask = 0X01X", Command::SetMask(vec![None, Some(true), Some(false), None, Some(false)]))]
     fn test_parse_commands(input: &str, expected: Command) {
         assert_eq!(input.parse(), Ok(expected));
     }

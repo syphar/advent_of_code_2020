@@ -1,5 +1,5 @@
 mod commands;
-use commands::Command;
+use commands::{BitMask, Command};
 
 use simple_error::SimpleError;
 use std::collections::HashMap;
@@ -20,36 +20,27 @@ fn main() {
 fn part_1<'a>(commands: impl Iterator<Item = &'a Command>) -> Result<u64, SimpleError> {
     let mut memory: HashMap<u64, u64> = HashMap::new();
 
-    let mut current_mask: HashMap<u8, u8> = HashMap::new();
+    let mut current_mask = BitMask::new();
 
     for command in commands {
         match command {
-            Command::Mask(mask) => {
-                current_mask = mask
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, v)| v.is_some())
-                    .map(|(i, v)| (i as u8, if v.unwrap() == true { 1 } else { 0 }))
-                    .collect();
-            }
-            Command::Set(adr, v) => {
+            Command::SetMask(mask) => current_mask = mask.iter().cloned().collect(),
+            Command::SetValue(adr, v) => {
                 let mut value = *v;
 
-                for (bit, bitvalue) in current_mask.iter() {
-                    match *bitvalue {
-                        1 => {
+                for (bit, onoff) in current_mask.iter().enumerate() {
+                    match onoff {
+                        Some(true) => {
                             // set a bit
                             let mask = 1 << bit;
                             value |= mask;
                         }
-                        0 => {
+                        Some(false) => {
                             // remove a bit
                             let mask = !(1 << bit);
                             value &= mask;
                         }
-                        _ => {
-                            return Err(SimpleError::new("unknown bit value"));
-                        }
+                        None => {}
                     }
                 }
                 memory.insert(*adr, value);
