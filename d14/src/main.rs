@@ -15,6 +15,7 @@ fn main() {
         .collect();
 
     println!("part 1: {:?}", part_1(input.iter()));
+    println!("part 2: {:?}", part_2(input.iter()));
 }
 
 fn part_1<'a>(commands: impl Iterator<Item = &'a Command>) -> Result<u64, SimpleError> {
@@ -51,6 +52,51 @@ fn part_1<'a>(commands: impl Iterator<Item = &'a Command>) -> Result<u64, Simple
     Ok(memory.values().filter(|&v| *v > 0).sum())
 }
 
+fn part_2<'a>(commands: impl Iterator<Item = &'a Command>) -> Result<u64, SimpleError> {
+    let mut memory: HashMap<u64, u64> = HashMap::new();
+    let mut current_mask = BitMask::new();
+
+    for command in commands {
+        match command {
+            Command::SetMask(mask) => current_mask = mask.iter().cloned().collect(),
+            Command::SetValue(a, value) => {
+                let mut adr: Vec<u64> = vec![*a];
+
+                for (bit, onoff) in current_mask.iter().enumerate() {
+                    match onoff {
+                        Some(true) => {
+                            // set a bit in all addresses
+                            let mask = 1 << bit;
+                            for i in 0..adr.len() {
+                                adr[i] |= mask;
+                            }
+                        }
+                        Some(false) => {}
+                        None => {
+                            // first set bit in all addresses,
+                            let mask_set = 1 << bit;
+                            for i in 0..adr.len() {
+                                adr[i] |= mask_set;
+                            }
+
+                            // then duplicate with removed bit
+                            let mask_del = !mask_set;
+                            let new_adr: Vec<u64> = adr.iter().map(|v| v & mask_del).collect();
+                            adr.extend(new_adr);
+                        }
+                    }
+                }
+
+                for a in adr.iter() {
+                    memory.insert(*a, *value);
+                }
+            }
+        }
+    }
+
+    Ok(memory.values().filter(|&v| *v > 0).sum())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -66,10 +112,24 @@ mod tests {
         .into_iter()
         .map(|line| line.to_string().parse().unwrap())
         .collect();
+        static ref TEST_DATA_2: Vec<Command> = vec![
+            "mask = 000000000000000000000000000000X1001X",
+            "mem[42] = 100",
+            "mask = 00000000000000000000000000000000X0XX",
+            "mem[26] = 1",
+        ]
+        .into_iter()
+        .map(|line| line.to_string().parse().unwrap())
+        .collect();
     }
 
     #[test]
     fn part_1_works() {
         assert_eq!(part_1(TEST_DATA.iter()), Ok(165));
+    }
+
+    #[test]
+    fn part_2_works() {
+        assert_eq!(part_2(TEST_DATA_2.iter()), Ok(208));
     }
 }
