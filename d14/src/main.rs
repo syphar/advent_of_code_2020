@@ -60,36 +60,38 @@ fn part_2<'a>(commands: impl Iterator<Item = &'a Command>) -> Result<u64, Simple
         match command {
             Command::SetMask(mask) => current_mask = mask.iter().cloned().collect(),
             Command::SetValue(a, value) => {
-                let mut adr: Vec<u64> = vec![*a];
+                let mut adresses: Vec<u64> = vec![*a];
 
                 for (bit, onoff) in current_mask.iter().enumerate() {
                     match onoff {
                         Some(true) => {
-                            // set a bit in all addresses
+                            // 1 means set a bit in all addresses
                             let mask = 1 << bit;
-                            for i in 0..adr.len() {
-                                adr[i] |= mask;
+                            for i in 0..adresses.len() {
+                                adresses[i] |= mask;
                             }
                         }
-                        Some(false) => {}
+                        Some(false) => {} // do nothing for 0 bit in mask
                         None => {
+                            // X means we need both possible values for
+                            // the addresses. So:
+
                             // first set bit in all addresses,
                             let mask_set = 1 << bit;
-                            for i in 0..adr.len() {
-                                adr[i] |= mask_set;
+                            for i in 0..adresses.len() {
+                                adresses[i] |= mask_set;
                             }
 
                             // then duplicate with removed bit
                             let mask_del = !mask_set;
-                            let new_adr: Vec<u64> = adr.iter().map(|v| v & mask_del).collect();
-                            adr.extend(new_adr);
+                            let new_adresses: Vec<u64> =
+                                adresses.iter().map(|v| v & mask_del).collect();
+                            adresses.extend(new_adresses);
                         }
                     }
                 }
 
-                for a in adr.iter() {
-                    memory.insert(*a, *value);
-                }
+                memory.extend(adresses.iter().map(|a| (*a, *value)));
             }
         }
     }
