@@ -91,6 +91,7 @@ fn part_2<'a>(commands: impl Iterator<Item = &'a Command>) -> Result<u64, Simple
                     }
                 }
 
+                // set the same value for all addresses in the list
                 memory.extend(adresses.iter().map(|a| (*a, *value)));
             }
         }
