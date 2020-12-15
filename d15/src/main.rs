@@ -1,12 +1,13 @@
 fn main() {
-    println!("part 1: {:?}", part_1(&vec![2, 0, 6, 12, 1, 3]));
-    // println!("part 2: {:?}", part_2(input.iter()));
+    let data = vec![2, 0, 6, 12, 1, 3];
+    println!("part 1: {:?}", run(&data, 2020));
+    println!("part 2: {:?}", run(&data, 30000000));
 }
 
-fn part_1(numbers: &[u64]) -> u64 {
+fn run(numbers: &[u64], until: usize) -> u64 {
     let mut n: Vec<u64> = numbers.iter().cloned().collect();
 
-    while n.len() < 2020 {
+    while n.len() < until {
         let last_number = n.last().unwrap();
 
         if let Some(already_spoken_at) = n
@@ -43,6 +44,17 @@ mod tests {
     #[test_case(&[3,2,1], 438)]
     #[test_case(&[3,1,2], 1836)]
     fn part_1_works(input: &[u64], expected: u64) {
-        assert_eq!(part_1(&input), expected);
+        assert_eq!(run(&input, 2020), expected);
     }
+
+    // #[test_case(&[0,3,6], 175594)]
+    // #[test_case(&[1,3,2], 2578)]
+    // #[test_case(&[2,1,3], 3544142)]
+    // #[test_case(&[1,2,3], 261214)]
+    // #[test_case(&[2,3,1], 6895259)]
+    // #[test_case(&[3,2,1], 18)]
+    // #[test_case(&[3,1,2], 362)]
+    // fn part_2_works(input: &[u64], expected: u64) {
+    //     assert_eq!(run(&input, 30000000), expected);
+    // }
 }
