@@ -17,20 +17,11 @@ fn run(numbers: &[usize], until: usize) -> usize {
     last_steps.remove(&last_number_spoken);
 
     for step in (numbers.len() + 1)..=until {
-        // println!("\nstep {}", step);
-        // println!("last number spoken: {}", last_number_spoken);
-        // println!("steps before {:?}", last_steps);
-
         if let Some(last_step) = last_steps.get(&last_number_spoken) {
-            // println!("was already spoken at step {}", last_step);
-
             let new_number = (step - 1) - last_step;
-            // println!("new number: {}", new_number);
-
             last_steps.insert(last_number_spoken, step - 1);
             last_number_spoken = new_number;
         } else {
-            // println!("was first time, putting zero in");
             last_steps.insert(last_number_spoken, step - 1);
             last_number_spoken = 0;
         }
