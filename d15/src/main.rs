@@ -1,34 +1,42 @@
+use std::collections::HashMap;
+
 fn main() {
     let data = vec![2, 0, 6, 12, 1, 3];
     println!("part 1: {:?}", run(&data, 2020));
     println!("part 2: {:?}", run(&data, 30000000));
 }
 
-fn run(numbers: &[u64], until: usize) -> u64 {
-    let mut n: Vec<u64> = numbers.iter().cloned().collect();
+fn run(numbers: &[usize], until: usize) -> usize {
+    let mut last_steps: HashMap<usize, usize> = numbers
+        .iter()
+        .enumerate()
+        .map(|(i, &v)| (v, i + 1))
+        .collect();
 
-    while n.len() < until {
-        let last_number = n.last().unwrap();
+    let mut last_number_spoken: usize = *(numbers.last().unwrap());
+    last_steps.remove(&last_number_spoken);
 
-        if let Some(already_spoken_at) = n
-            .iter()
-            .enumerate()
-            .rev()
-            .skip(1)
-            .filter(|(_, &v)| v == *last_number)
-            .map(|(i, _)| i)
-            .next()
-        {
-            let last_number_turn = n.len();
-            let already_spoken_turn = already_spoken_at + 1;
-            let new_number = last_number_turn - already_spoken_turn;
-            n.push(new_number as u64);
+    for step in (numbers.len() + 1)..=until {
+        // println!("\nstep {}", step);
+        // println!("last number spoken: {}", last_number_spoken);
+        // println!("steps before {:?}", last_steps);
+
+        if let Some(last_step) = last_steps.get(&last_number_spoken) {
+            // println!("was already spoken at step {}", last_step);
+
+            let new_number = (step - 1) - last_step;
+            // println!("new number: {}", new_number);
+
+            last_steps.insert(last_number_spoken, step - 1);
+            last_number_spoken = new_number;
         } else {
-            n.push(0);
+            // println!("was first time, putting zero in");
+            last_steps.insert(last_number_spoken, step - 1);
+            last_number_spoken = 0;
         }
     }
 
-    *(n.last().unwrap())
+    last_number_spoken
 }
 
 #[cfg(test)]
@@ -43,18 +51,18 @@ mod tests {
     #[test_case(&[2,3,1], 78)]
     #[test_case(&[3,2,1], 438)]
     #[test_case(&[3,1,2], 1836)]
-    fn part_1_works(input: &[u64], expected: u64) {
+    fn part_1_works(input: &[usize], expected: usize) {
         assert_eq!(run(&input, 2020), expected);
     }
 
-    // #[test_case(&[0,3,6], 175594)]
-    // #[test_case(&[1,3,2], 2578)]
-    // #[test_case(&[2,1,3], 3544142)]
-    // #[test_case(&[1,2,3], 261214)]
-    // #[test_case(&[2,3,1], 6895259)]
-    // #[test_case(&[3,2,1], 18)]
-    // #[test_case(&[3,1,2], 362)]
-    // fn part_2_works(input: &[u64], expected: u64) {
-    //     assert_eq!(run(&input, 30000000), expected);
-    // }
+    #[test_case(&[0,3,6], 175594)]
+    #[test_case(&[1,3,2], 2578)]
+    #[test_case(&[2,1,3], 3544142)]
+    #[test_case(&[1,2,3], 261214)]
+    #[test_case(&[2,3,1], 6895259)]
+    #[test_case(&[3,2,1], 18)]
+    #[test_case(&[3,1,2], 362)]
+    fn part_2_works(input: &[usize], expected: usize) {
+        assert_eq!(run(&input, 30000000), expected);
+    }
 }
