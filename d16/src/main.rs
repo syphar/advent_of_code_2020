@@ -42,6 +42,8 @@ fn part_1(lines: &[String]) -> Result<usize, SimpleError> {
     let fields = read_fields(lines.iter().take_while(|l| !(l.is_empty())));
 
     // skip: fields, 2 empty lines, 2 headers, your own ticket
+    // collect the wrong numbers for every "other ticket" line,
+    // flatten the structure and sum up the values
     Ok(read_tickets(&lines[(fields.len() + 2 + 2 + 1)..])
         .iter()
         .map(|numbers| wrong_values(&fields, &numbers))
@@ -88,8 +90,8 @@ fn part_2(lines: &[String], field_starts_with: &str) -> Result<usize, SimpleErro
     // now we go through the mapping, most specific to most generic and assign
     // the first column found. In the end, we can match everything.
     let mut data_idx_to_field_idx: HashMap<usize, usize> = HashMap::new();
-    for (field_idx, matching_data_col) in field_matches {
-        if let Some(&next_remaining_index) = matching_data_col
+    for (field_idx, matching_data_cols) in field_matches {
+        if let Some(&next_remaining_index) = matching_data_cols
             .iter()
             .filter(|&i| !(data_idx_to_field_idx.contains_key(&i)))
             .next()
@@ -104,7 +106,7 @@ fn part_2(lines: &[String], field_starts_with: &str) -> Result<usize, SimpleErro
         return Err(SimpleError::new("could not map all the fields"));
     }
 
-    let my_ticket = &tickets[0];
+    let my_ticket = tickets.first().unwrap();
 
     // find the field with the wanted prefix and multiply their values
     Ok(data_idx_to_field_idx
