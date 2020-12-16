@@ -2,10 +2,9 @@ mod ticket;
 use ticket::Field;
 
 use simple_error::SimpleError;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::iter::FromIterator;
 
 fn main() {
     let file = File::open("input.txt").unwrap();
@@ -38,14 +37,6 @@ fn wrong_values(fields: &Vec<Field>, numbers: &Vec<usize>) -> Vec<usize> {
         .collect()
 }
 
-fn wrong_values_single_field(field: &Field, numbers: &Vec<usize>) -> Vec<usize> {
-    numbers
-        .iter()
-        .cloned()
-        .filter(|number| !(field.check(number)))
-        .collect()
-}
-
 fn part_1(lines: &Vec<String>) -> Result<usize, SimpleError> {
     //read field definitions
     let fields = read_fields(lines.iter().take_while(|l| !(l.is_empty())));
@@ -65,10 +56,12 @@ fn part_2(lines: &Vec<String>, field_starts_with: &str) -> Result<usize, SimpleE
     //read field definitions
     let fields = read_fields(lines.iter().take_while(|l| !(l.is_empty())));
 
+    // read my own ticket
     let my_ticket_location = fields.len() + 2;
     let mut tickets = read_tickets(&lines[my_ticket_location..=my_ticket_location]);
     let other_tickets_location = my_ticket_location + 3;
 
+    // and the other tickets
     tickets.extend(
         read_tickets(&lines[other_tickets_location..])
             .iter()
@@ -76,41 +69,38 @@ fn part_2(lines: &Vec<String>, field_starts_with: &str) -> Result<usize, SimpleE
             .filter(|numbers| wrong_values(&fields, &numbers).is_empty()),
     );
 
-    let mut field_matches: Vec<(usize, Vec<usize>)> = Vec::new();
+    // creating matching matrix because fields can match with
+    // multiple columns. Here we collect all column matches for each field.
+    let mut field_matches: Vec<(usize, Vec<usize>)> = fields
+        .iter()
+        .enumerate()
+        .map(|(field_idx, field)| {
+            (
+                field_idx,
+                (0..fields.len()) // amount of columns = amount of fields
+                    // get all data indexes where the values match for all tickets
+                    .filter(|&data_idx| tickets.iter().all(|ticket| field.check(&ticket[data_idx])))
+                    .collect(),
+            )
+        })
+        .collect();
 
-    for field_idx in 0..fields.len() {
-        let field = &fields[field_idx];
-        let mut matching_data_idx: Vec<usize> = Vec::new();
-
-        for data_idx in 0..fields.len() {
-            if tickets.iter().all(|ticket| field.check(&ticket[data_idx])) {
-                matching_data_idx.push(data_idx);
-            }
-        }
-
-        if matching_data_idx.is_empty() {
-            return Err(SimpleError::new("could not find a mapping for all fields"));
-        }
-
-        field_matches.push((field_idx, matching_data_idx));
-    }
-
+    // then we sort by amount of matching columns to have the most specific match first
     field_matches.sort_by_key(|t| t.1.len());
 
+    // now we go through the mapping, most specific to most generic and assign
+    // the first column found. In the end, we can match everything.
     let mut data_idx_to_field_idx: HashMap<usize, usize> = HashMap::new();
-
-    for (field_idx, matching_data_idx) in field_matches {
-        let remaining_data_idx: Vec<usize> = matching_data_idx
+    for (field_idx, matching_data_col) in field_matches {
+        if let Some(&next_remaining_index) = matching_data_col
             .iter()
-            .cloned()
-            .filter(|i| !(data_idx_to_field_idx.contains_key(&i)))
-            .collect();
-
-        if remaining_data_idx.is_empty() {
+            .filter(|&i| !(data_idx_to_field_idx.contains_key(&i)))
+            .next()
+        {
+            data_idx_to_field_idx.insert(next_remaining_index, field_idx);
+        } else {
             return Err(SimpleError::new("no remaining data index to assign"));
         }
-
-        data_idx_to_field_idx.insert(remaining_data_idx[0], field_idx);
     }
 
     if data_idx_to_field_idx.len() != fields.len() {
@@ -119,10 +109,11 @@ fn part_2(lines: &Vec<String>, field_starts_with: &str) -> Result<usize, SimpleE
 
     let my_ticket = &tickets[0];
 
+    // find the field with the wanted prefix and multiply their values
     Ok(data_idx_to_field_idx
         .iter()
-        .filter(|(_, &f)| fields[f].name.starts_with(field_starts_with))
-        .map(|(&d, _)| my_ticket[d])
+        .filter(|(_, &field_idx)| fields[field_idx].name.starts_with(field_starts_with))
+        .map(|(&data_idx, _)| my_ticket[data_idx])
         .product::<usize>())
 }
 
