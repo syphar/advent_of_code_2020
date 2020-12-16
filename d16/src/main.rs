@@ -29,7 +29,7 @@ fn read_fields<'a>(lines: impl Iterator<Item = &'a String>) -> Vec<Field> {
     lines.filter_map(|l| l.parse().ok()).collect()
 }
 
-fn wrong_values(fields: &Vec<Field>, numbers: &Vec<usize>) -> Vec<usize> {
+fn wrong_values(fields: &[Field], numbers: &[usize]) -> Vec<usize> {
     numbers
         .iter()
         .filter(|number| !(fields.iter().any(|f| f.check(&number))))
@@ -37,22 +37,19 @@ fn wrong_values(fields: &Vec<Field>, numbers: &Vec<usize>) -> Vec<usize> {
         .collect()
 }
 
-fn part_1(lines: &Vec<String>) -> Result<usize, SimpleError> {
+fn part_1(lines: &[String]) -> Result<usize, SimpleError> {
     //read field definitions
     let fields = read_fields(lines.iter().take_while(|l| !(l.is_empty())));
 
-    let mut invalid_values: Vec<usize> = Vec::new();
-
-    // read lines for nearby tickets
     // skip: fields, 2 empty lines, 2 headers, your own ticket
-    for numbers in read_tickets(&lines[(fields.len() + 2 + 2 + 1)..]) {
-        invalid_values.extend(wrong_values(&fields, &numbers));
-    }
-
-    Ok(invalid_values.iter().cloned().sum())
+    Ok(read_tickets(&lines[(fields.len() + 2 + 2 + 1)..])
+        .iter()
+        .map(|numbers| wrong_values(&fields, &numbers))
+        .flatten()
+        .sum())
 }
 
-fn part_2(lines: &Vec<String>, field_starts_with: &str) -> Result<usize, SimpleError> {
+fn part_2(lines: &[String], field_starts_with: &str) -> Result<usize, SimpleError> {
     //read field definitions
     let fields = read_fields(lines.iter().take_while(|l| !(l.is_empty())));
 
