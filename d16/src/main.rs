@@ -2,9 +2,10 @@ mod ticket;
 use ticket::Field;
 
 use simple_error::SimpleError;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::iter::FromIterator;
 
 fn main() {
     let file = File::open("input.txt").unwrap();
@@ -29,10 +30,20 @@ fn read_fields<'a>(lines: impl Iterator<Item = &'a String>) -> Vec<Field> {
     lines.filter_map(|l| l.parse().ok()).collect()
 }
 
-fn check_ticket(fields: &Vec<Field>, numbers: &Vec<usize>) -> bool {
-    !(numbers
+fn wrong_values(fields: &Vec<Field>, numbers: &Vec<usize>) -> Vec<usize> {
+    numbers
         .iter()
-        .any(|number| !(fields.iter().any(|f| f.check(&number)))))
+        .filter(|number| !(fields.iter().any(|f| f.check(&number))))
+        .cloned()
+        .collect()
+}
+
+fn wrong_values_single_field(field: &Field, numbers: &Vec<usize>) -> Vec<usize> {
+    numbers
+        .iter()
+        .filter(|number| !(field.check(number)))
+        .cloned()
+        .collect()
 }
 
 fn part_1(lines: &Vec<String>) -> Result<usize, SimpleError> {
@@ -44,11 +55,7 @@ fn part_1(lines: &Vec<String>) -> Result<usize, SimpleError> {
     // read lines for nearby tickets
     // skip: fields, 2 empty lines, 2 headers, your own ticket
     for numbers in read_tickets(&lines[(fields.len() + 2 + 2 + 1)..]) {
-        invalid_values.extend(
-            numbers
-                .iter()
-                .filter(|number| !(fields.iter().any(|f| f.check(&number)))),
-        );
+        invalid_values.extend(wrong_values(&fields, &numbers));
     }
 
     Ok(invalid_values.iter().cloned().sum())
@@ -56,50 +63,66 @@ fn part_1(lines: &Vec<String>) -> Result<usize, SimpleError> {
 
 fn part_2(lines: &Vec<String>, field_starts_with: &str) -> Result<usize, SimpleError> {
     //read field definitions
-    let fields = dbg!(read_fields(lines.iter().take_while(|l| !(l.is_empty()))));
+    let fields = read_fields(lines.iter().take_while(|l| !(l.is_empty())));
 
-    // first read only my ticket
     let my_ticket_location = fields.len() + 2;
-    let mut tickets = dbg!(read_tickets(
-        &lines[my_ticket_location..=my_ticket_location]
-    ));
-
-    // then add the other tickets
     let other_tickets_location = my_ticket_location + 3;
-    tickets.extend(dbg!(read_tickets(&lines[other_tickets_location..])
+    let tickets: Vec<Vec<usize>> = read_tickets(&lines[other_tickets_location..])
         .iter()
         .cloned()
-        .filter(|numbers| check_ticket(&fields, &numbers))));
+        .filter(|numbers| wrong_values(&fields, &numbers).is_empty())
+        .collect();
 
     let mut field_to_index_mapping: HashMap<usize, usize> = HashMap::new();
 
     for data_idx in 0..fields.len() {
+        let mut all_ticket_values_for_this_field = tickets
+            .iter()
+            .cloned()
+            .map(|t| t[data_idx])
+            .collect::<Vec<usize>>();
+        all_ticket_values_for_this_field.sort();
+        println!(
+            "\n\ntry to find field for idx {}: {:?}",
+            data_idx, all_ticket_values_for_this_field,
+        );
+
+        let mut field_found = false;
         for field_idx in 0..fields.len() {
             if field_to_index_mapping.contains_key(&field_idx) {
                 continue;
             }
 
             let field = &fields[field_idx];
+            println!("\ttrying {:?}", field);
+            println!(
+                "\twrong values: {:?}",
+                wrong_values_single_field(&field, &all_ticket_values_for_this_field)
+            );
 
             if tickets.iter().all(|ticket| field.check(&ticket[data_idx])) {
                 field_to_index_mapping.insert(field_idx, data_idx);
+                println!("\tFOUND!");
+                field_found = true;
                 break;
             }
+        }
+
+        if !field_found {
+            return Err(SimpleError::new("no field found for index"));
         }
     }
 
     if field_to_index_mapping.len() != fields.len() {
-        dbg!(field_to_index_mapping);
-        dbg!(fields);
         return Err(SimpleError::new("could not map all the fields"));
     }
 
-    let my_ticket = &tickets[0];
+    let my_ticket = read_tickets(&lines[my_ticket_location..=my_ticket_location]);
 
     Ok(field_to_index_mapping
         .iter()
         .filter(|(&f, _)| fields[f].name.starts_with(field_starts_with))
-        .map(|(_, &d)| my_ticket[d])
+        .map(|(_, &d)| my_ticket[0][d])
         .product::<usize>())
 }
 
