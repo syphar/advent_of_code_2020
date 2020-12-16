@@ -114,7 +114,7 @@ fn part_2(lines: &Vec<String>, field_starts_with: &str) -> Result<usize, SimpleE
         .iter()
         .filter(|(_, &field_idx)| fields[field_idx].name.starts_with(field_starts_with))
         .map(|(&data_idx, _)| my_ticket[data_idx])
-        .product::<usize>())
+        .product())
 }
 
 #[cfg(test)]
