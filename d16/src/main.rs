@@ -41,8 +41,8 @@ fn wrong_values(fields: &Vec<Field>, numbers: &Vec<usize>) -> Vec<usize> {
 fn wrong_values_single_field(field: &Field, numbers: &Vec<usize>) -> Vec<usize> {
     numbers
         .iter()
-        .filter(|number| !(field.check(number)))
         .cloned()
+        .filter(|number| !(field.check(number)))
         .collect()
 }
 
@@ -66,63 +66,102 @@ fn part_2(lines: &Vec<String>, field_starts_with: &str) -> Result<usize, SimpleE
     let fields = read_fields(lines.iter().take_while(|l| !(l.is_empty())));
 
     let my_ticket_location = fields.len() + 2;
+    let mut tickets = read_tickets(&lines[my_ticket_location..=my_ticket_location]);
     let other_tickets_location = my_ticket_location + 3;
-    let tickets: Vec<Vec<usize>> = read_tickets(&lines[other_tickets_location..])
-        .iter()
-        .cloned()
-        .filter(|numbers| wrong_values(&fields, &numbers).is_empty())
-        .collect();
 
-    let mut field_to_index_mapping: HashMap<usize, usize> = HashMap::new();
-
-    for data_idx in 0..fields.len() {
-        let mut all_ticket_values_for_this_field = tickets
+    tickets.extend(
+        read_tickets(&lines[other_tickets_location..])
             .iter()
             .cloned()
-            .map(|t| t[data_idx])
-            .collect::<Vec<usize>>();
-        all_ticket_values_for_this_field.sort();
-        println!(
-            "\n\ntry to find field for idx {}: {:?}",
-            data_idx, all_ticket_values_for_this_field,
-        );
+            .filter(|numbers| wrong_values(&fields, &numbers).is_empty()),
+    );
 
-        let mut field_found = false;
-        for field_idx in 0..fields.len() {
-            if field_to_index_mapping.contains_key(&field_idx) {
+    let mut index_to_field: HashMap<usize, usize> = HashMap::new();
+
+    for field_idx in 0..fields.len() {
+        let field = &fields[field_idx];
+        println!("\n\nfield: {:?}", field);
+        println!("\tcurrent mapping: {:?}", index_to_field);
+
+        let mut index_found = false;
+        for data_idx in 0..fields.len() {
+            if index_to_field.contains_key(&data_idx) {
                 continue;
             }
-
-            let field = &fields[field_idx];
-            println!("\ttrying {:?}", field);
+            println!("\ttrying data index {}", data_idx);
+            let all_ticket_values_for_this_field = tickets
+                .iter()
+                .cloned()
+                .map(|t| t[data_idx])
+                .collect::<Vec<usize>>();
             println!(
                 "\twrong values: {:?}",
                 wrong_values_single_field(&field, &all_ticket_values_for_this_field)
             );
 
             if tickets.iter().all(|ticket| field.check(&ticket[data_idx])) {
-                field_to_index_mapping.insert(field_idx, data_idx);
+                index_to_field.insert(data_idx, field_idx);
                 println!("\tFOUND!");
-                field_found = true;
+                index_found = true;
                 break;
             }
         }
-
-        if !field_found {
-            return Err(SimpleError::new("no field found for index"));
+        if !index_found {
+            return Err(SimpleError::new(format!(
+                "no index found for field {}",
+                field_idx,
+            )));
         }
     }
 
-    if field_to_index_mapping.len() != fields.len() {
+    // for data_idx in 0..fields.len() {
+    //     let mut all_ticket_values_for_this_field = tickets
+    //         .iter()
+    //         .cloned()
+    //         .map(|t| t[data_idx])
+    //         .collect::<Vec<usize>>();
+    //     all_ticket_values_for_this_field.sort();
+    //     println!(
+    //         "\n\ntry to find field for idx {}: {:?}",
+    //         data_idx, all_ticket_values_for_this_field,
+    //     );
+
+    //     let mut field_found = false;
+    //     for field_idx in 0..fields.len() {
+    //         if field_to_index_mapping.contains_key(&field_idx) {
+    //             continue;
+    //         }
+
+    //         let field = &fields[field_idx];
+    //         println!("\ttrying {:?}", field);
+    //         println!(
+    //             "\twrong values: {:?}",
+    //             wrong_values_single_field(&field, &all_ticket_values_for_this_field)
+    //         );
+
+    //         if tickets.iter().all(|ticket| field.check(&ticket[data_idx])) {
+    //             field_to_index_mapping.insert(field_idx, data_idx);
+    //             println!("\tFOUND!");
+    //             field_found = true;
+    //             break;
+    //         }
+    //     }
+
+    //     if !field_found {
+    //         return Err(SimpleError::new("no field found for index"));
+    //     }
+    // }
+
+    if index_to_field.len() != fields.len() {
         return Err(SimpleError::new("could not map all the fields"));
     }
 
-    let my_ticket = read_tickets(&lines[my_ticket_location..=my_ticket_location]);
+    let my_ticket = &tickets[0];
 
-    Ok(field_to_index_mapping
+    Ok(index_to_field
         .iter()
-        .filter(|(&f, _)| fields[f].name.starts_with(field_starts_with))
-        .map(|(_, &d)| my_ticket[0][d])
+        .filter(|(_, &f)| fields[f].name.starts_with(field_starts_with))
+        .map(|(&d, _)| my_ticket[d])
         .product::<usize>())
 }
 
