@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::ops::RangeInclusive;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct State {
     data: HashMap<(i64, i64, i64), bool>,
 }
@@ -32,7 +32,7 @@ impl State {
         self.data.values().filter(|&v| *v == true).count()
     }
 
-    pub fn count_neighbors_set(&self, x: i64, y: i64, z: i64) -> i64 {
+    pub fn count_active_neighbors(&self, x: i64, y: i64, z: i64) -> i64 {
         let mut count = 0;
         for (dx, dy, dz) in iproduct!(-1..=1, -1..=1, -1..=1) {
             if x == 0 && y == 0 && z == 0 {
@@ -107,13 +107,13 @@ mod tests {
     fn test_count_neighbors() {
         let mut state = State::new();
 
-        assert_eq!(state.count_neighbors_set(0, 0, 0), 0);
+        assert_eq!(state.count_active_neighbors(0, 0, 0), 0);
 
         state.set(0, 0, 0, true);
-        assert_eq!(state.count_neighbors_set(0, 0, 0), 0);
+        assert_eq!(state.count_active_neighbors(0, 0, 0), 0);
 
-        assert_eq!(state.count_neighbors_set(1, 0, 0), 1);
-        assert_eq!(state.count_neighbors_set(2, 0, 0), 0);
+        assert_eq!(state.count_active_neighbors(1, 0, 0), 1);
+        assert_eq!(state.count_active_neighbors(2, 0, 0), 0);
     }
 
     #[test]
