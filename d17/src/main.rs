@@ -19,7 +19,7 @@ fn run(input: &[&str]) -> usize {
         let line = &input[y];
         for x in 0..line.len() {
             if line.chars().nth(x).unwrap() == '#' {
-                state.set(x as i64, y as i64, 0, true);
+                state.set(x as i64, y as i64, 0, 0, true);
             }
         }
     }
@@ -27,16 +27,21 @@ fn run(input: &[&str]) -> usize {
     for _ in 1..=6 {
         let mut new_state = state.clone();
 
-        for (x, y, z) in iproduct!(state.range_x(), state.range_y(), state.range_z()) {
-            let active_neighbors = state.count_active_neighbors(x, y, z);
+        for (x, y, z, w) in iproduct!(
+            state.range_x(),
+            state.range_y(),
+            state.range_z(),
+            state.range_w()
+        ) {
+            let active_neighbors = state.count_active_neighbors(x, y, z, w);
 
-            if state.get(x, y, z) == true {
+            if state.get(x, y, z, w) == true {
                 if !((2..=3).contains(&active_neighbors)) {
-                    new_state.set(x, y, z, false);
+                    new_state.set(x, y, z, w, false);
                 }
             } else {
                 if active_neighbors == 3 {
-                    new_state.set(x, y, z, true);
+                    new_state.set(x, y, z, w, true);
                 }
             }
         }
