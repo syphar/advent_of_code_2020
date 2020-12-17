@@ -24,26 +24,19 @@ fn run(input: &[&str]) -> usize {
         }
     }
 
-    println!("{}", state);
-
-    for cycle in 1..=1 {
+    for _ in 1..=6 {
         let mut new_state = state.clone();
         for x in state.range_x() {
             for y in state.range_y() {
                 for z in state.range_z() {
-                    println!("\n\tcell visit {}/{}/{}", x, y, z);
                     let active_neighbors = state.count_neighbors_set(x, y, z);
-                    println!("\tneighbors: {}", active_neighbors);
-                    println!("\tvalue: {}", state.get(x, y, z));
 
                     if state.get(x, y, z) == true {
                         if !((2..=3).contains(&active_neighbors)) {
-                            println!("\tset to FALSE");
                             new_state.set(x, y, z, false);
                         }
                     } else {
                         if active_neighbors == 3 {
-                            println!("\tset to TRUE");
                             new_state.set(x, y, z, true);
                         }
                     }
@@ -52,7 +45,6 @@ fn run(input: &[&str]) -> usize {
         }
 
         state = new_state;
-        println!("\n after {} cycle\n\n{}", cycle, state);
     }
 
     state.count_active_cubes()
