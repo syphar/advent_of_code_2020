@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate itertools;
-use std::cmp;
+use itertools::Itertools;
+
 use std::collections::HashSet;
 use std::ops::RangeInclusive;
 
@@ -13,57 +14,43 @@ fn main() {
     println!("part 2: {:?}", run_2(&INPUT_DATA));
 }
 
-type Space = HashSet<(i64, i64, i64)>;
-type Space4 = HashSet<(i64, i64, i64, i64)>;
+type Idx = [i64; 3];
+type Idx4 = [i64; 4];
+type Space = HashSet<Idx>;
+type Space4 = HashSet<Idx4>;
 
 fn find_range(space: &Space) -> RangeInclusive<i64> {
-    let min = space
-        .iter()
-        .map(|idx| cmp::min(cmp::min(idx.0, idx.1), idx.2))
-        .min()
-        .unwrap();
-    let max = space
-        .iter()
-        .map(|idx| cmp::max(cmp::max(idx.0, idx.1), idx.2))
-        .max()
-        .unwrap();
+    let min = space.iter().flatten().min().unwrap();
+    let max = space.iter().flatten().max().unwrap();
     (min - 1)..=(max + 1)
 }
 
 fn find_range_4(space: &Space4) -> RangeInclusive<i64> {
-    let min = space
-        .iter()
-        .map(|idx| cmp::min(cmp::min(cmp::min(idx.0, idx.1), idx.2), idx.3))
-        .min()
-        .unwrap();
-    let max = space
-        .iter()
-        .map(|idx| cmp::max(cmp::max(cmp::max(idx.0, idx.1), idx.2), idx.3))
-        .max()
-        .unwrap();
+    let min = space.iter().flatten().min().unwrap();
+    let max = space.iter().flatten().max().unwrap();
     (min - 1)..=(max + 1)
 }
 
-fn count_active_neighbors(space: &Space, idx: (i64, i64, i64)) -> usize {
+fn count_active_neighbors(space: &Space, idx: Idx) -> usize {
     let mut count = 0;
     for (dx, dy, dz) in iproduct!(-1..=1, -1..=1, -1..=1) {
         if dx == 0 && dy == 0 && dz == 0 {
             continue;
         }
-        if space.contains(&(idx.0 + dx, idx.1 + dy, idx.2 + dz)) {
+        if space.contains(&[idx[0] + dx, idx[1] + dy, idx[2] + dz]) {
             count += 1;
         }
     }
     count
 }
 
-fn count_active_neighbors_4(space: &Space4, idx: (i64, i64, i64, i64)) -> usize {
+fn count_active_neighbors_4(space: &Space4, idx: Idx4) -> usize {
     let mut count = 0;
     for (dx, dy, dz, dw) in iproduct!(-1..=1, -1..=1, -1..=1, -1..=1) {
         if dx == 0 && dy == 0 && dz == 0 && dw == 0 {
             continue;
         }
-        if space.contains(&(idx.0 + dx, idx.1 + dy, idx.2 + dz, idx.3 + dw)) {
+        if space.contains(&[idx[0] + dx, idx[1] + dy, idx[2] + dz, idx[3] + dw]) {
             count += 1;
         }
     }
@@ -77,7 +64,7 @@ fn run(input: &[&str]) -> usize {
         let line = &input[y];
         for x in 0..line.len() {
             if line.chars().nth(x).unwrap() == '#' {
-                state.insert((x as i64, y as i64, 0));
+                state.insert([x as i64, y as i64, 0]);
             }
         }
     }
@@ -87,7 +74,8 @@ fn run(input: &[&str]) -> usize {
 
         let range = find_range(&state);
 
-        for idx in iproduct!(range.clone(), range.clone(), range.clone()) {
+        for idx_ in iproduct!(range.clone(), range.clone(), range.clone()) {
+            let idx = [idx_.0, idx_.1, idx_.2];
             let active_neighbors = count_active_neighbors(&state, idx);
 
             if state.contains(&idx) {
@@ -113,7 +101,7 @@ fn run_2(input: &[&str]) -> usize {
         let line = &input[y];
         for x in 0..line.len() {
             if line.chars().nth(x).unwrap() == '#' {
-                state.insert((x as i64, y as i64, 0, 0));
+                state.insert([x as i64, y as i64, 0, 0]);
             }
         }
     }
@@ -123,7 +111,8 @@ fn run_2(input: &[&str]) -> usize {
 
         let range = find_range_4(&state);
 
-        for idx in iproduct!(range.clone(), range.clone(), range.clone(), range.clone()) {
+        for idx_ in iproduct!(range.clone(), range.clone(), range.clone(), range.clone()) {
+            let idx = [idx_.0, idx_.1, idx_.2, idx_.3];
             let active_neighbors = count_active_neighbors_4(&state, idx);
 
             if state.contains(&idx) {
