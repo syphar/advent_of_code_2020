@@ -2,9 +2,28 @@
 extern crate simple_error;
 use core::iter::Peekable;
 use simple_error::SimpleResult;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 fn main() {
-    println!("hello world");
+    let file = File::open("input.txt").unwrap();
+
+    let lines: Vec<String> = BufReader::new(file)
+        .lines()
+        .map(|line| line.unwrap())
+        .collect();
+
+    println!("part 1: {:?}", part_1(&lines));
+}
+
+fn part_1(lines: &[String]) -> SimpleResult<u64> {
+    let mut sum = 0;
+
+    for line in lines {
+        let num = evaluate(&mut line.chars().peekable())?;
+        sum += num;
+    }
+    Ok(sum)
 }
 
 #[derive(Debug, Clone)]
