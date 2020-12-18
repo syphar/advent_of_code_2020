@@ -56,17 +56,13 @@ fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64>
                 if let Some(_) = current_operator {
                     bail!("unexpected operator");
                 } else {
-                    if let Some(_) = current_operator {
-                        bail!("unexpected operator after operator");
-                    } else {
-                        it.next();
+                    it.next();
 
-                        current_operator = Some(match c {
-                            '+' => Operator::Sum,
-                            '*' => Operator::Product,
-                            _ => bail!("this should not happen"),
-                        });
-                    }
+                    current_operator = Some(match c {
+                        '+' => Operator::Sum,
+                        '*' => Operator::Product,
+                        _ => bail!("this should not happen"),
+                    });
                 }
             }
             _ => {
