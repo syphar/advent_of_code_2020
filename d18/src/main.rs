@@ -29,13 +29,10 @@ fn main() {
     println!("part 2: {:?}", part_2::run(&lines));
 }
 
-// arithmetic NOM example:
-// https://github.com/Geal/nom/blob/master/tests/arithmetic.rs
-
 mod part_1 {
     use super::*;
 
-    pub fn run(lines: &[String]) -> SimpleResult<i64> {
+    pub fn run(lines: &[String]) -> SimpleResult<u64> {
         let mut sum = 0;
 
         for line in lines {
@@ -48,24 +45,29 @@ mod part_1 {
         Ok(sum)
     }
 
-    fn parens(i: &str) -> IResult<&str, i64> {
+    // based on
+    // https://github.com/Geal/nom/blob/master/tests/arithmetic.rs
+    // while removing operators that are not used and
+    // merging expr/term because there is no operator preference
+
+    fn parens(i: &str) -> IResult<&str, u64> {
         delimited(space, delimited(tag("("), expr, tag(")")), space)(i)
     }
 
-    fn factor(i: &str) -> IResult<&str, i64> {
+    fn factor(i: &str) -> IResult<&str, u64> {
         alt((
             map_res(delimited(space, digit, space), FromStr::from_str),
             parens,
         ))(i)
     }
 
-    pub fn expr(i: &str) -> IResult<&str, i64> {
+    pub fn expr(i: &str) -> IResult<&str, u64> {
         let (i, init) = factor(i)?;
 
         fold_many0(
             pair(alt((char('+'), char('*'))), factor),
             init,
-            |acc, (op, val): (char, i64)| {
+            |acc, (op, val): (char, u64)| {
                 if op == '+' {
                     acc + val
                 } else {
@@ -79,7 +81,7 @@ mod part_1 {
 mod part_2 {
     use super::*;
 
-    pub fn run(lines: &[String]) -> SimpleResult<i64> {
+    pub fn run(lines: &[String]) -> SimpleResult<u64> {
         let mut sum = 0;
 
         for line in lines {
@@ -90,47 +92,38 @@ mod part_2 {
         Ok(sum)
     }
 
-    fn parens(i: &str) -> IResult<&str, i64> {
+    // based on
+    // https://github.com/Geal/nom/blob/master/tests/arithmetic.rs
+    // while switching operator preference and
+    // removing operators that are not used
+
+    fn parens(i: &str) -> IResult<&str, u64> {
         delimited(space, delimited(tag("("), expr, tag(")")), space)(i)
     }
 
-    fn factor(i: &str) -> IResult<&str, i64> {
+    fn factor(i: &str) -> IResult<&str, u64> {
         alt((
             map_res(delimited(space, digit, space), FromStr::from_str),
             parens,
         ))(i)
     }
 
-    fn term(i: &str) -> IResult<&str, i64> {
+    fn term(i: &str) -> IResult<&str, u64> {
         let (i, init) = factor(i)?;
 
         fold_many0(
-            pair(alt((char('+'), char('-'))), factor),
+            pair(char('+'), factor),
             init,
-            |acc, (op, val): (char, i64)| {
-                if op == '+' {
-                    acc + val
-                } else {
-                    acc - val
-                }
-            },
+            |acc, (_, val): (char, u64)| acc + val,
         )(i)
     }
 
-    pub fn expr(i: &str) -> IResult<&str, i64> {
+    pub fn expr(i: &str) -> IResult<&str, u64> {
         let (i, init) = term(i)?;
 
-        fold_many0(
-            pair(alt((char('*'), char('/'))), term),
-            init,
-            |acc, (op, val): (char, i64)| {
-                if op == '*' {
-                    acc * val
-                } else {
-                    acc / val
-                }
-            },
-        )(i)
+        fold_many0(pair(char('*'), term), init, |acc, (_, val): (char, u64)| {
+            acc * val
+        })(i)
     }
 }
 
@@ -145,7 +138,7 @@ mod tests {
     #[test_case("5 + (8 * 3 + 9 + 3 * 4 * 3)", 437; "5")]
     #[test_case("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 12240; "6")]
     #[test_case("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 13632; "7")]
-    fn test_part_1(expression: &str, result: i64) {
+    fn test_part_1(expression: &str, result: u64) {
         assert_eq!(part_1::expr(expression), Ok(("", result)));
     }
 
@@ -155,7 +148,7 @@ mod tests {
     #[test_case("5 + (8 * 3 + 9 + 3 * 4 * 3)", 1445)]
     #[test_case("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 669060)]
     #[test_case("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 23340)]
-    fn test_part_2(input: &str, expected: i64) {
+    fn test_part_2(input: &str, expected: u64) {
         assert_eq!(part_2::expr(input), Ok(("", expected)));
     }
 }
