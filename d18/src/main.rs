@@ -26,179 +26,187 @@ fn main() {
         .map(|line| line.unwrap())
         .collect();
 
-    println!("part 1: {:?}", part_1(&lines));
-    println!("part 2: {:?}", part_2(&lines));
+    println!("part 1: {:?}", part_1::run(&lines));
+    println!("part 2: {:?}", part_2::run(&lines));
 }
 
-fn part_1(lines: &[String]) -> SimpleResult<u64> {
-    let mut sum = 0;
+mod part_1 {
+    use super::*;
 
-    for line in lines {
-        let num = evaluate(&mut line.chars().peekable())?;
-        sum += num;
-    }
-    Ok(sum)
-}
+    pub fn run(lines: &[String]) -> SimpleResult<u64> {
+        let mut sum = 0;
 
-#[derive(Debug, Clone)]
-enum Operator {
-    Sum,
-    Product,
-}
-
-fn calculate_result(
-    current_result: &Option<u64>,
-    current_operator: &Option<Operator>,
-    number: u64,
-) -> SimpleResult<u64> {
-    if let Some(r) = current_result {
-        match current_operator {
-            None => {
-                bail!("unexpected number");
-            }
-            Some(Operator::Sum) => {
-                return Ok(r + number);
-            }
-            Some(Operator::Product) => {
-                return Ok(r * number);
-            }
+        for line in lines {
+            let num = evaluate(&mut line.chars().peekable())?;
+            sum += num;
         }
-    } else {
-        return Ok(number);
+        Ok(sum)
     }
-}
 
-fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64> {
-    let mut current_result: Option<u64> = None;
-    let mut current_operator: Option<Operator> = None;
+    #[derive(Debug, Clone)]
+    enum Operator {
+        Sum,
+        Product,
+    }
 
-    while let Some(&c) = it.peek() {
-        match c {
-            ' ' => {
-                it.next();
-            }
-            '0'..='9' => {
-                it.next();
-                let mut number = c
-                    .to_string()
-                    .parse::<u64>()
-                    .expect("The caller should have passed a digit.");
-
-                while let Some(Ok(digit)) = it.peek().map(|c| c.to_string().parse::<u64>()) {
-                    number = number * 10 + digit;
-                    it.next();
+    fn calculate_result(
+        current_result: &Option<u64>,
+        current_operator: &Option<Operator>,
+        number: u64,
+    ) -> SimpleResult<u64> {
+        if let Some(r) = current_result {
+            match current_operator {
+                None => {
+                    bail!("unexpected number");
                 }
-
-                current_result = Some(calculate_result(
-                    &current_result,
-                    &current_operator,
-                    number,
-                )?);
-                current_operator = None;
-            }
-            '+' | '*' => {
-                if let Some(_) = current_operator {
-                    bail!("unexpected operator");
-                } else {
-                    it.next();
-
-                    current_operator = Some(match c {
-                        '+' => Operator::Sum,
-                        '*' => Operator::Product,
-                        _ => bail!("this should not happen"),
-                    });
+                Some(Operator::Sum) => {
+                    return Ok(r + number);
+                }
+                Some(Operator::Product) => {
+                    return Ok(r * number);
                 }
             }
-            '(' => {
-                it.next();
-                let number = evaluate(it)?;
+        } else {
+            return Ok(number);
+        }
+    }
 
-                if let Some(&ch) = it.peek() {
-                    if ch != ')' {
-                        bail!("missing ')'");
+    pub fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64> {
+        let mut current_result: Option<u64> = None;
+        let mut current_operator: Option<Operator> = None;
+
+        while let Some(&c) = it.peek() {
+            match c {
+                ' ' => {
+                    it.next();
+                }
+                '0'..='9' => {
+                    it.next();
+                    let mut number = c
+                        .to_string()
+                        .parse::<u64>()
+                        .expect("The caller should have passed a digit.");
+
+                    while let Some(Ok(digit)) = it.peek().map(|c| c.to_string().parse::<u64>()) {
+                        number = number * 10 + digit;
+                        it.next();
+                    }
+
+                    current_result = Some(calculate_result(
+                        &current_result,
+                        &current_operator,
+                        number,
+                    )?);
+                    current_operator = None;
+                }
+                '+' | '*' => {
+                    if let Some(_) = current_operator {
+                        bail!("unexpected operator");
                     } else {
                         it.next();
-                        current_result = Some(calculate_result(
-                            &current_result,
-                            &current_operator,
-                            number,
-                        )?);
-                        current_operator = None;
+
+                        current_operator = Some(match c {
+                            '+' => Operator::Sum,
+                            '*' => Operator::Product,
+                            _ => bail!("this should not happen"),
+                        });
                     }
                 }
-            }
-            ')' => {
-                break;
-            }
-            _ => {
-                bail!("unexpected character: {}", c);
+                '(' => {
+                    it.next();
+                    let number = evaluate(it)?;
+
+                    if let Some(&ch) = it.peek() {
+                        if ch != ')' {
+                            bail!("missing ')'");
+                        } else {
+                            it.next();
+                            current_result = Some(calculate_result(
+                                &current_result,
+                                &current_operator,
+                                number,
+                            )?);
+                            current_operator = None;
+                        }
+                    }
+                }
+                ')' => {
+                    break;
+                }
+                _ => {
+                    bail!("unexpected character: {}", c);
+                }
             }
         }
-    }
 
-    if let Some(value) = current_result {
-        if let Some(_) = current_operator {
-            bail!("unexpected operator")
+        if let Some(value) = current_result {
+            if let Some(_) = current_operator {
+                bail!("unexpected operator")
+            } else {
+                Ok(value)
+            }
         } else {
-            Ok(value)
-        }
-    } else {
-        bail!("no result!")
-    }
-}
-
-fn part_2(lines: &[String]) -> SimpleResult<i64> {
-    let mut sum = 0;
-
-    for line in lines {
-        if let Ok((_, result)) = expr(line) {
-            sum += result;
+            bail!("no result!")
         }
     }
-    Ok(sum)
 }
 
-fn parens(i: &str) -> IResult<&str, i64> {
-    delimited(space, delimited(tag("("), expr, tag(")")), space)(i)
-}
+mod part_2 {
+    use super::*;
 
-fn factor(i: &str) -> IResult<&str, i64> {
-    alt((
-        map_res(delimited(space, digit, space), FromStr::from_str),
-        parens,
-    ))(i)
-}
+    pub fn run(lines: &[String]) -> SimpleResult<i64> {
+        let mut sum = 0;
 
-fn term(i: &str) -> IResult<&str, i64> {
-    let (i, init) = factor(i)?;
-
-    fold_many0(
-        pair(alt((char('+'), char('-'))), factor),
-        init,
-        |acc, (op, val): (char, i64)| {
-            if op == '+' {
-                acc + val
-            } else {
-                acc - val
+        for line in lines {
+            if let Ok((_, result)) = expr(line) {
+                sum += result;
             }
-        },
-    )(i)
-}
+        }
+        Ok(sum)
+    }
 
-fn expr(i: &str) -> IResult<&str, i64> {
-    let (i, init) = term(i)?;
+    fn parens(i: &str) -> IResult<&str, i64> {
+        delimited(space, delimited(tag("("), expr, tag(")")), space)(i)
+    }
 
-    fold_many0(
-        pair(alt((char('*'), char('/'))), term),
-        init,
-        |acc, (op, val): (char, i64)| {
-            if op == '*' {
-                acc * val
-            } else {
-                acc / val
-            }
-        },
-    )(i)
+    fn factor(i: &str) -> IResult<&str, i64> {
+        alt((
+            map_res(delimited(space, digit, space), FromStr::from_str),
+            parens,
+        ))(i)
+    }
+
+    fn term(i: &str) -> IResult<&str, i64> {
+        let (i, init) = factor(i)?;
+
+        fold_many0(
+            pair(alt((char('+'), char('-'))), factor),
+            init,
+            |acc, (op, val): (char, i64)| {
+                if op == '+' {
+                    acc + val
+                } else {
+                    acc - val
+                }
+            },
+        )(i)
+    }
+
+    pub fn expr(i: &str) -> IResult<&str, i64> {
+        let (i, init) = term(i)?;
+
+        fold_many0(
+            pair(alt((char('*'), char('/'))), term),
+            init,
+            |acc, (op, val): (char, i64)| {
+                if op == '*' {
+                    acc * val
+                } else {
+                    acc / val
+                }
+            },
+        )(i)
+    }
 }
 
 #[cfg(test)]
@@ -214,7 +222,7 @@ mod tests {
     #[test_case("123+321 +"; "unexpected operator at the end")]
     #[test_case("(1+2"; "simple braces, missing close")]
     fn test_evaluate_errors(expression: &str) {
-        assert!(evaluate(&mut expression.chars().peekable()).is_err());
+        assert!(part_1::evaluate(&mut expression.chars().peekable()).is_err());
     }
 
     #[test_case("123", 123)]
@@ -233,7 +241,10 @@ mod tests {
     #[test_case("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 12240; "6")]
     #[test_case("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 13632; "7")]
     fn test_evaluate(expression: &str, result: u64) {
-        assert_eq!(evaluate(&mut expression.chars().peekable()), Ok(result));
+        assert_eq!(
+            part_1::evaluate(&mut expression.chars().peekable()),
+            Ok(result)
+        );
     }
 
     #[test_case("1 + 2 * 3 + 4 * 5 + 6", 231)]
@@ -243,6 +254,6 @@ mod tests {
     #[test_case("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 669060)]
     #[test_case("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 23340)]
     fn test_part_2(input: &str, expected: i64) {
-        assert_eq!(expr(input), Ok(("", expected)));
+        assert_eq!(part_2::expr(input), Ok(("", expected)));
     }
 }
