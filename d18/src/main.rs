@@ -32,6 +32,28 @@ enum Operator {
     Product,
 }
 
+fn calculate_result(
+    current_result: &Option<u64>,
+    current_operator: &Option<Operator>,
+    number: u64,
+) -> SimpleResult<u64> {
+    if let Some(r) = current_result {
+        match current_operator {
+            None => {
+                bail!("unexpected number");
+            }
+            Some(Operator::Sum) => {
+                return Ok(r + number);
+            }
+            Some(Operator::Product) => {
+                return Ok(r * number);
+            }
+        }
+    } else {
+        return Ok(number);
+    }
+}
+
 fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64> {
     let mut current_result: Option<u64> = None;
     let mut current_operator: Option<Operator> = None;
@@ -53,23 +75,12 @@ fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64>
                     it.next();
                 }
 
-                if let Some(r) = current_result {
-                    match current_operator {
-                        None => {
-                            bail!("unexpected number");
-                        }
-                        Some(Operator::Sum) => {
-                            current_result = Some(r + number);
-                            current_operator = None;
-                        }
-                        Some(Operator::Product) => {
-                            current_result = Some(r * number);
-                            current_operator = None;
-                        }
-                    }
-                } else {
-                    current_result = Some(number);
-                }
+                current_result = Some(calculate_result(
+                    &current_result,
+                    &current_operator,
+                    number,
+                )?);
+                current_operator = None;
             }
             '+' | '*' => {
                 if let Some(_) = current_operator {
@@ -93,23 +104,12 @@ fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64>
                         bail!("missing ')'");
                     } else {
                         it.next();
-                        if let Some(r) = current_result {
-                            match current_operator {
-                                None => {
-                                    bail!("unexpected expression");
-                                }
-                                Some(Operator::Sum) => {
-                                    current_result = Some(r + number);
-                                    current_operator = None;
-                                }
-                                Some(Operator::Product) => {
-                                    current_result = Some(r * number);
-                                    current_operator = None;
-                                }
-                            }
-                        } else {
-                            current_result = Some(number);
-                        }
+                        current_result = Some(calculate_result(
+                            &current_result,
+                            &current_operator,
+                            number,
+                        )?);
+                        current_operator = None;
                     }
                 }
             }
