@@ -65,6 +65,38 @@ fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64>
                     });
                 }
             }
+            '(' => {
+                it.next();
+                let number = evaluate(it)?;
+
+                if let Some(&ch) = it.peek() {
+                    if ch != ')' {
+                        bail!("missing ')'");
+                    } else {
+                        it.next();
+                        if let Some(r) = current_result {
+                            match current_operator {
+                                None => {
+                                    bail!("unexpected expression");
+                                }
+                                Some(Operator::Sum) => {
+                                    current_result = Some(r + number);
+                                    current_operator = None;
+                                }
+                                Some(Operator::Product) => {
+                                    current_result = Some(r * number);
+                                    current_operator = None;
+                                }
+                            }
+                        } else {
+                            current_result = Some(number);
+                        }
+                    }
+                }
+            }
+            ')' => {
+                break;
+            }
             _ => {
                 bail!("unexpected character: {}", c);
             }
@@ -93,6 +125,7 @@ mod tests {
     #[test_case("+"; "operator alone")]
     #[test_case("123 ++ 123"; "double operator")]
     #[test_case("123+321 +"; "unexpected operator at the end")]
+    #[test_case("(1+2"; "simple braces, missing close")]
     fn test_evaluate_errors(expression: &str) {
         assert!(evaluate(&mut expression.chars().peekable()).is_err());
     }
@@ -104,11 +137,14 @@ mod tests {
     #[test_case(" 123 + 123 ", 123+123)]
     #[test_case(" 123 + 123 + 321", 123+123+321)]
     #[test_case("1 + 2 * 3 + 4 * 5 + 6", 71; "d18 1")]
-    // #[test_case("1 + (2 * 3) + (4 * (5 + 6))", 51; "3")]
-    // #[test_case("2 * 3 + (4 * 5)", 26; "4")]
-    // #[test_case("5 + (8 * 3 + 9 + 3 * 4 * 3)", 437; "5")]
-    // #[test_case("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 12240; "6")]
-    // #[test_case("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 13632; "7")]
+    #[test_case("(1+2)", 1+2; "simple braces")]
+    #[test_case("1 + (1+2)", 1 + (1+2); "simple braces 2")]
+    #[test_case("1 + (2*3)", 7; "simple braces 3")]
+    #[test_case("1 + (2 * 3) + (4 * (5 + 6))", 51; "3")]
+    #[test_case("2 * 3 + (4 * 5)", 26; "4")]
+    #[test_case("5 + (8 * 3 + 9 + 3 * 4 * 3)", 437; "5")]
+    #[test_case("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))", 12240; "6")]
+    #[test_case("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2", 13632; "7")]
     fn test_evaluate(expression: &str, result: u64) {
         assert_eq!(evaluate(&mut expression.chars().peekable()), Ok(result));
     }
