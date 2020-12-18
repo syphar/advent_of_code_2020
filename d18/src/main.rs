@@ -76,9 +76,13 @@ fn evaluate<T: Iterator<Item = char>>(it: &mut Peekable<T>) -> SimpleResult<u64>
     }
 
     if let Some(value) = current_result {
-        Ok(value)
+        if let Some(_) = current_operator {
+            bail!("unexpected operator")
+        } else {
+            Ok(value)
+        }
     } else {
-        bail!("no result!");
+        bail!("no result!")
     }
 }
 
@@ -87,11 +91,12 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case(""; "1")]
-    #[test_case("-1")]
+    #[test_case(""; "no result")]
+    #[test_case("-1"; "operator at the beginning")]
     #[test_case("123 123"; "without operator")]
-    #[test_case("+"; "plus alone")]
-    #[test_case("123 ++ 123")]
+    #[test_case("+"; "operator alone")]
+    #[test_case("123 ++ 123"; "double operator")]
+    #[test_case("123+321 +"; "unexpected operator at the end")]
     fn test_evaluate_errors(expression: &str) {
         assert!(evaluate(&mut expression.chars().peekable()).is_err());
     }
@@ -103,7 +108,6 @@ mod tests {
     #[test_case(" 123 + 123 ", 123+123)]
     #[test_case(" 123 + 123 + 321", 123+123+321)]
     #[test_case("1 + 2 * 3 + 4 * 5 + 6", 71; "d18 1")]
-    // #[test_case("1 + (2 * 3) + (4 * (5 + 6))", 51; "2")]
     // #[test_case("1 + (2 * 3) + (4 * (5 + 6))", 51; "3")]
     // #[test_case("2 * 3 + (4 * 5)", 26; "4")]
     // #[test_case("5 + (8 * 3 + 9 + 3 * 4 * 3)", 437; "5")]
