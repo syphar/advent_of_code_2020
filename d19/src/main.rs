@@ -1,13 +1,11 @@
 #![feature(str_split_once)]
 
-// mod rules;
-// use rules::Rule;
-
 use regex::Regex;
 use simple_error::{bail, SimpleResult};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::iter::FromIterator;
 
 fn resolve_rule_by_number(rules: &HashMap<u16, String>, which: u16) -> SimpleResult<String> {
     if let Some(rule) = rules.get(&which) {
