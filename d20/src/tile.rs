@@ -24,12 +24,34 @@ impl Tile {
         }
     }
 
+    pub fn get_number(&self) -> u16 {
+        self.num
+    }
+
     pub fn get_row(&self, y: usize) -> Vec<bool> {
         self.data[y].clone()
     }
 
+    pub fn first_row(&self) -> Vec<bool> {
+        self.get_row(0)
+    }
+
+    pub fn last_row(&self) -> Vec<bool> {
+        self.get_row(self.data.len() - 1)
+    }
+
     pub fn get_column(&self, x: usize) -> Vec<bool> {
         self.data.iter().map(|row| row[x]).collect()
+    }
+
+    pub fn first_column(&self) -> Vec<bool> {
+        self.get_column(0)
+    }
+
+    pub fn last_column(&self) -> Vec<bool> {
+        // we assume the vecs are same size
+        // TODO: be sure
+        self.get_column(self.data.len() - 1)
     }
 
     fn flip_x(&self) -> Self {
@@ -85,7 +107,6 @@ impl Tile {
             TileConversion::Rotate90 => Ok(self.rotate_90()),
             TileConversion::Rotate180 => Ok(self.rotate_90().rotate_90()),
             TileConversion::Rotate270 => Ok(self.rotate_90().rotate_90().rotate_90()),
-            _ => bail!("conversion not built yet"),
         }
     }
 }
@@ -116,7 +137,7 @@ impl FromStr for Tile {
     type Err = SimpleError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let mut lines = input.lines();
+        let mut lines = input.lines().filter(|l| !(l.is_empty()));
 
         let mut tile: Tile;
 
