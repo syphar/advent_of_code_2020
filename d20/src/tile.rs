@@ -1,5 +1,4 @@
-use simple_error::{bail, SimpleError};
-use std::convert::TryInto;
+use simple_error::{bail, SimpleError, SimpleResult};
 use std::fmt;
 use std::str::FromStr;
 
@@ -14,29 +13,54 @@ pub enum TileConversion {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Tile {
     num: u16,
-    data: [[bool; 10]; 10],
+    data: Vec<Vec<bool>>,
 }
 
 impl Tile {
     pub fn new(num: u16) -> Self {
         Tile {
             num,
-            data: [[false; 10]; 10],
+            data: Vec::new(),
         }
     }
 
-    pub fn get_row(&self, y: usize) -> [bool; 10] {
-        self.data[y]
+    pub fn get_row(&self, y: usize) -> Vec<bool> {
+        self.data[y].clone()
     }
 
-    pub fn get_column(&self, x: usize) -> [bool; 10] {
-        self.data
-            .iter()
-            .map(|row| row[x])
-            .collect::<Vec<_>>()
-            .as_slice()
-            .try_into()
-            .unwrap()
+    pub fn get_column(&self, x: usize) -> Vec<bool> {
+        self.data.iter().map(|row| row[x]).collect()
+    }
+
+    fn flip_x(&self) -> Self {
+        Tile {
+            num: self.num,
+            data: self
+                .data
+                .iter()
+                .map(|row| {
+                    (0..row.len())
+                        .rev()
+                        .map(|source_idx| row[source_idx])
+                        .collect()
+                })
+                .collect(),
+        }
+    }
+
+    fn flip_y(&self) -> Self {
+        Tile {
+            num: self.num,
+            data: self.data.iter().rev().cloned().collect(),
+        }
+    }
+
+    pub fn convert(&self, which: TileConversion) -> SimpleResult<Tile> {
+        match which {
+            TileConversion::FlipX => Ok(self.flip_x()),
+            TileConversion::FlipY => Ok(self.flip_y()),
+            _ => bail!("conversion not built yet"),
+        }
     }
 }
 
@@ -44,12 +68,12 @@ impl fmt::Display for Tile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Tile {}:", self.num)?;
 
-        for y in 0..10 {
-            for x in 0..10 {
+        for row in self.data.iter() {
+            for cell in row.iter() {
                 write!(
                     f,
                     "{}",
-                    match self.data[y][x] {
+                    match cell {
                         true => "#",
                         false => ".",
                     }
@@ -88,21 +112,16 @@ impl FromStr for Tile {
         }
 
         for (y, line) in lines.enumerate() {
-            if y >= 10 {
-                break;
-            }
+            let mut linedata: Vec<bool> = Vec::new();
 
             for (x, ch) in line.chars().enumerate() {
-                if x >= 10 {
-                    break;
-                }
-
-                tile.data[y][x] = match ch {
+                linedata.push(match ch {
                     '#' => true,
                     '.' => false,
                     _ => bail!("unknown  boolean character {} at x:{} / y:{}", ch, x, y),
-                };
+                });
             }
+            tile.data.push(linedata);
         }
 
         Ok(tile)
@@ -162,5 +181,48 @@ mod tests {
         );
 
         assert_eq!(format!("{}", tile), input);
+    }
+
+    #[test]
+    fn test_flip_x() {
+        let input = "Tile 123:\n\
+            #..\n\
+            ##.\n\
+            ###\n";
+
+        let tile = input
+            .parse::<Tile>()
+            .unwrap()
+            .convert(TileConversion::FlipX)
+            .unwrap();
+
+        assert_eq!(
+            format!("{}", tile),
+            "Tile 123:\n\
+            ..#\n\
+            .##\n\
+            ###\n"
+        );
+    }
+    #[test]
+    fn test_flip_y() {
+        let input = "Tile 123:\n\
+            #..\n\
+            ##.\n\
+            ###\n";
+
+        let tile = input
+            .parse::<Tile>()
+            .unwrap()
+            .convert(TileConversion::FlipY)
+            .unwrap();
+
+        assert_eq!(
+            format!("{}", tile),
+            "Tile 123:\n\
+            ###\n\
+            ##.\n\
+            #..\n"
+        );
     }
 }
