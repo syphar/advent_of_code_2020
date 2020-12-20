@@ -1,14 +1,6 @@
-use simple_error::{bail, SimpleError, SimpleResult};
+use simple_error::{bail, SimpleError};
 use std::fmt;
 use std::str::FromStr;
-
-pub enum TileConversion {
-    FlipX,
-    FlipY,
-    Rotate90,
-    Rotate180,
-    Rotate270,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Tile {
@@ -26,6 +18,17 @@ impl Tile {
 
     pub fn get_number(&self) -> u16 {
         self.num
+    }
+
+    pub fn check(&self) -> bool {
+        let len = self.data.len();
+
+        for line in self.data.iter() {
+            if line.len() != len {
+                return false;
+            }
+        }
+        true
     }
 
     pub fn get_row(&self, y: usize) -> Vec<bool> {
@@ -54,7 +57,7 @@ impl Tile {
         self.get_column(self.data.len() - 1)
     }
 
-    fn flip_x(&self) -> Self {
+    pub fn flip_x(&self) -> Self {
         Tile {
             num: self.num,
             data: self
@@ -70,14 +73,14 @@ impl Tile {
         }
     }
 
-    fn flip_y(&self) -> Self {
+    pub fn flip_y(&self) -> Self {
         Tile {
             num: self.num,
             data: self.data.iter().rev().cloned().collect(),
         }
     }
 
-    fn rotate_90(&self) -> Self {
+    pub fn rotate_90(&self) -> Self {
         let mut ret = Tile {
             num: self.num,
             data: (0..self.data.len())
@@ -100,20 +103,18 @@ impl Tile {
         ret
     }
 
-    pub fn convert(&self, which: TileConversion) -> SimpleResult<Tile> {
-        match which {
-            TileConversion::FlipX => Ok(self.flip_x()),
-            TileConversion::FlipY => Ok(self.flip_y()),
-            TileConversion::Rotate90 => Ok(self.rotate_90()),
-            TileConversion::Rotate180 => Ok(self.rotate_90().rotate_90()),
-            TileConversion::Rotate270 => Ok(self.rotate_90().rotate_90().rotate_90()),
-        }
+    pub fn rotate_180(&self) -> Self {
+        self.rotate_90().rotate_90()
+    }
+
+    pub fn rotate_270(&self) -> Self {
+        self.rotate_90().rotate_90().rotate_90()
     }
 }
 
 impl fmt::Display for Tile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Tile {}:", self.num)?;
+        writeln!(f, "Tile {}:", self.num,)?;
 
         for row in self.data.iter() {
             for cell in row.iter() {
@@ -237,11 +238,7 @@ mod tests {
             ##.\n\
             ###\n";
 
-        let tile = input
-            .parse::<Tile>()
-            .unwrap()
-            .convert(TileConversion::FlipX)
-            .unwrap();
+        let tile = input.parse::<Tile>().unwrap().flip_x();
 
         assert_eq!(
             format!("{}", tile),
@@ -259,11 +256,7 @@ mod tests {
             ##.\n\
             ###\n";
 
-        let tile = input
-            .parse::<Tile>()
-            .unwrap()
-            .convert(TileConversion::FlipY)
-            .unwrap();
+        let tile = input.parse::<Tile>().unwrap().flip_y();
 
         assert_eq!(
             format!("{}", tile),
@@ -281,11 +274,7 @@ mod tests {
             #..\n\
             #..\n";
 
-        let tile = input
-            .parse::<Tile>()
-            .unwrap()
-            .convert(TileConversion::Rotate90)
-            .unwrap();
+        let tile = input.parse::<Tile>().unwrap().rotate_90();
 
         assert_eq!(
             format!("{}", tile),
@@ -303,11 +292,7 @@ mod tests {
             #..\n\
             #..\n";
 
-        let tile = input
-            .parse::<Tile>()
-            .unwrap()
-            .convert(TileConversion::Rotate180)
-            .unwrap();
+        let tile = input.parse::<Tile>().unwrap().rotate_180();
 
         assert_eq!(
             format!("{}", tile),
@@ -325,11 +310,7 @@ mod tests {
             #..\n\
             #..\n";
 
-        let tile = input
-            .parse::<Tile>()
-            .unwrap()
-            .convert(TileConversion::Rotate270)
-            .unwrap();
+        let tile = input.parse::<Tile>().unwrap().rotate_270();
 
         assert_eq!(
             format!("{}", tile),

@@ -1,23 +1,28 @@
 use crate::tile::Tile;
-use simple_error::{bail, SimpleError, SimpleResult};
+use simple_error::{bail, SimpleResult};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::ops::RangeInclusive;
+use std::ops::Range;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Pattern {
-    data: HashMap<(i16, i16), Tile>,
+    data: HashMap<(u16, u16), Tile>,
     tile_ids: HashSet<u16>,
+    size: u16,
 }
 
 impl Pattern {
-    pub fn new() -> Self {
+    pub fn new(size: u16) -> Self {
         Pattern {
             data: HashMap::new(),
             tile_ids: HashSet::new(),
+            size,
         }
     }
-    pub fn try_insert(&mut self, tile: &Tile, x: i16, y: i16) -> SimpleResult<()> {
-        if self.data.contains_key(&(y, x)) {
+    pub fn try_insert(&mut self, tile: &Tile, x: u16, y: u16) -> SimpleResult<()> {
+        if x >= self.size || y >= self.size {
+            bail!("index out of bounds");
+        } else if self.data.contains_key(&(y, x)) {
             bail!("cell already occupied");
         } else if self.tile_ids.contains(&tile.get_number()) {
             bail!("tile id already in pattern");
@@ -25,33 +30,41 @@ impl Pattern {
             let mut cells_found = 0;
             let mut cells_matching = 0;
 
-            if let Some(other_tile) = self.data.get(&(y - 1, x)) {
-                cells_found += 1;
+            if y > 0 {
+                if let Some(other_tile) = self.data.get(&(y - 1, x)) {
+                    cells_found += 1;
 
-                if tile.first_row() == other_tile.last_row() {
-                    cells_matching += 1;
+                    if tile.first_row() == other_tile.last_row() {
+                        cells_matching += 1;
+                    }
                 }
             }
 
-            if let Some(other_tile) = self.data.get(&(y + 1, x)) {
-                cells_found += 1;
+            if self.range_y().contains(&(y + 1)) {
+                if let Some(other_tile) = self.data.get(&(y + 1, x)) {
+                    cells_found += 1;
 
-                if tile.last_row() == other_tile.first_row() {
-                    cells_matching += 1;
+                    if tile.last_row() == other_tile.first_row() {
+                        cells_matching += 1;
+                    }
                 }
             }
 
-            if let Some(other_tile) = self.data.get(&(y, x - 1)) {
-                cells_found += 1;
-                if tile.first_column() == other_tile.last_column() {
-                    cells_matching += 1;
+            if x > 0 {
+                if let Some(other_tile) = self.data.get(&(y, x - 1)) {
+                    cells_found += 1;
+                    if tile.first_column() == other_tile.last_column() {
+                        cells_matching += 1;
+                    }
                 }
             }
 
-            if let Some(other_tile) = self.data.get(&(y, x + 1)) {
-                cells_found += 1;
-                if tile.last_column() == other_tile.first_column() {
-                    cells_matching += 1;
+            if self.range_x().contains(&(x + 1)) {
+                if let Some(other_tile) = self.data.get(&(y, x + 1)) {
+                    cells_found += 1;
+                    if tile.last_column() == other_tile.first_column() {
+                        cells_matching += 1;
+                    }
                 }
             }
 
@@ -70,23 +83,38 @@ impl Pattern {
         Ok(())
     }
 
-    fn range_x(&self) -> SimpleResult<RangeInclusive<i16>> {
-        if self.data.is_empty() {
-            bail!("empty data");
+    pub fn contains_tile(&self, tile: &Tile) -> bool {
+        self.tile_ids.contains(&(tile.get_number()))
+    }
+
+    pub fn contains_index(&self, x: u16, y: u16) -> bool {
+        self.data.contains_key(&(y, x))
+    }
+
+    pub fn index_in_range(&self, x: i16, y: i16) -> bool {
+        if x < 0 || y < 0 {
+            false
+        } else if !(self.range_x().contains(&(x as u16))) || !(self.range_y().contains(&(y as u16)))
+        {
+            false
         } else {
-            let min = self.data.keys().map(|(_y, x)| x).min().unwrap();
-            let max = self.data.keys().map(|(_y, x)| x).max().unwrap();
-            Ok(*min..=*max)
+            true
         }
     }
 
-    fn range_y(&self) -> SimpleResult<RangeInclusive<i16>> {
-        if self.data.is_empty() {
-            bail!("empty data");
+    pub fn range_x(&self) -> Range<u16> {
+        0..self.size
+    }
+
+    pub fn range_y(&self) -> Range<u16> {
+        0..self.size
+    }
+
+    pub fn is_full(&self) -> bool {
+        if self.data.len() == (self.size * self.size) as usize {
+            true
         } else {
-            let min = self.data.keys().map(|(y, _x)| y).min().unwrap();
-            let max = self.data.keys().map(|(y, _x)| y).max().unwrap();
-            Ok(*min..=*max)
+            false
         }
     }
 }
@@ -97,8 +125,8 @@ impl fmt::Display for Pattern {
             return Ok(());
         }
 
-        for y in self.range_y().unwrap() {
-            for x in self.range_x().unwrap() {
+        for y in self.range_y() {
+            for x in self.range_x() {
                 let idx = (y, x);
                 if let Some(tile) = self.data.get(&idx) {
                     write!(f, "{}\t", tile.get_number())?;
@@ -106,7 +134,7 @@ impl fmt::Display for Pattern {
                     write!(f, "    \t")?;
                 }
             }
-            write!(f, "\n")?;
+            writeln!(f, "")?;
         }
         Ok(())
     }
@@ -119,16 +147,18 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let p = Pattern::new();
+        let p = Pattern::new(1);
         assert_eq!(format!("{}", p), "");
     }
 
     #[test]
     fn test_single_tile() {
-        let mut p = Pattern::new();
+        let mut p = Pattern::new(11);
         // insert into empty pattern is successful
         p.try_insert(&(Tile::new(1234)), 0, 0).unwrap();
-        assert_eq!(format!("{}", p), "1234\t\n");
+        assert!(format!("{}", p).contains("1234"));
+        assert!(p.contains_tile(&(Tile::new(1234))));
+        assert!(!(p.contains_tile(&(Tile::new(4)))));
 
         // insert again into the same cell fails
         assert!(p.try_insert(&(Tile::new(4321)), 0, 0).is_err());
@@ -142,13 +172,13 @@ mod tests {
         #.#\n\
         ..#\n\
         ..#",
+        2,
         1,
-        0,
         "Tile 2:\n\
         #.#\n\
         #..\n\
         #.#",
-        "1\t2\t\n"; 
+        "    \t    \t    \t\n    \t1\t2\t\n    \t    \t    \t\n";
         "right"
     )]
     #[test_case(
@@ -156,13 +186,13 @@ mod tests {
         #.#\n\
         ..#\n\
         ..#",
-        -1,
         0,
+        1,
         "Tile 2:\n\
         #.#\n\
         #..\n\
         #..",
-        "2\t1\t\n";
+        "    \t    \t    \t\n2\t1\t    \t\n    \t    \t    \t\n";
         "left"
     )]
     #[test_case(
@@ -170,13 +200,13 @@ mod tests {
         #.#\n\
         ..#\n\
         ..#",
-        0,
         1,
+        2,
         "Tile 2:\n\
         ..#\n\
         #..\n\
         #.#",
-        "1\t\n2\t\n"; 
+        "    \t    \t    \t\n    \t1\t    \t\n    \t2\t    \t\n";
         "down"
     )]
     #[test_case(
@@ -184,20 +214,20 @@ mod tests {
         #.#\n\
         ..#\n\
         ..#",
+        1,
         0,
-        -1,
         "Tile 2:\n\
         #..\n\
         #..\n\
         #.#", 
-        "2\t\n1\t\n"; 
+        "    \t2\t    \t\n    \t1\t    \t\n    \t    \t    \t\n"; 
         "up"
     )]
-    fn test_try_insert(input_0_0: &str, x: i16, y: i16, new_tile: &str, expected: &str) {
+    fn test_try_insert(input_0_0: &str, x: u16, y: u16, new_tile: &str, expected: &str) {
         // intial setup
-        let mut p = Pattern::new();
+        let mut p = Pattern::new(3);
         let input_tile: Tile = input_0_0.parse().unwrap();
-        p.try_insert(&input_tile, 0, 0).unwrap();
+        p.try_insert(&input_tile, 1, 1).unwrap();
 
         // new tile
         let new_tile: Tile = new_tile.parse().unwrap();
@@ -232,9 +262,9 @@ mod tests {
         #.#"; 
         "good match, but not directly next to each other"
     )]
-    fn test_try_insert_fail(input_0_0: &str, x: i16, y: i16, new_tile: &str) {
+    fn test_try_insert_fail(input_0_0: &str, x: u16, y: u16, new_tile: &str) {
         // intial setup
-        let mut p = Pattern::new();
+        let mut p = Pattern::new(3);
         let input_tile: Tile = input_0_0.parse().unwrap();
         p.try_insert(&input_tile, 0, 0).unwrap();
 
