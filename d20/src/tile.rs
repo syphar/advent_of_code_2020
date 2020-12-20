@@ -55,10 +55,36 @@ impl Tile {
         }
     }
 
+    fn rotate_90(&self) -> Self {
+        let mut ret = Tile {
+            num: self.num,
+            data: (0..self.data.len())
+                .map(|_| {
+                    let mut v = Vec::new();
+                    v.resize(self.data.len(), false);
+                    v
+                })
+                .collect(),
+        };
+
+        let n = self.data.len();
+
+        for i in 0..n {
+            for j in 0..n {
+                ret.data[i][j] = self.data[n - j - 1][i];
+            }
+        }
+
+        ret
+    }
+
     pub fn convert(&self, which: TileConversion) -> SimpleResult<Tile> {
         match which {
             TileConversion::FlipX => Ok(self.flip_x()),
             TileConversion::FlipY => Ok(self.flip_y()),
+            TileConversion::Rotate90 => Ok(self.rotate_90()),
+            TileConversion::Rotate180 => Ok(self.rotate_90().rotate_90()),
+            TileConversion::Rotate270 => Ok(self.rotate_90().rotate_90().rotate_90()),
             _ => bail!("conversion not built yet"),
         }
     }
@@ -204,6 +230,7 @@ mod tests {
             ###\n"
         );
     }
+
     #[test]
     fn test_flip_y() {
         let input = "Tile 123:\n\
@@ -223,6 +250,72 @@ mod tests {
             ###\n\
             ##.\n\
             #..\n"
+        );
+    }
+
+    #[test]
+    fn test_rotate_90() {
+        let input = "Tile 123:\n\
+            #.#\n\
+            #..\n\
+            #..\n";
+
+        let tile = input
+            .parse::<Tile>()
+            .unwrap()
+            .convert(TileConversion::Rotate90)
+            .unwrap();
+
+        assert_eq!(
+            format!("{}", tile),
+            "Tile 123:\n\
+            ###\n\
+            ...\n\
+            ..#\n"
+        );
+    }
+
+    #[test]
+    fn test_rotate_180() {
+        let input = "Tile 123:\n\
+            #.#\n\
+            #..\n\
+            #..\n";
+
+        let tile = input
+            .parse::<Tile>()
+            .unwrap()
+            .convert(TileConversion::Rotate180)
+            .unwrap();
+
+        assert_eq!(
+            format!("{}", tile),
+            "Tile 123:\n\
+            ..#\n\
+            ..#\n\
+            #.#\n"
+        );
+    }
+
+    #[test]
+    fn test_rotate_270() {
+        let input = "Tile 123:\n\
+            #.#\n\
+            #..\n\
+            #..\n";
+
+        let tile = input
+            .parse::<Tile>()
+            .unwrap()
+            .convert(TileConversion::Rotate270)
+            .unwrap();
+
+        assert_eq!(
+            format!("{}", tile),
+            "Tile 123:\n\
+            #..\n\
+            ...\n\
+            ###\n"
         );
     }
 }
