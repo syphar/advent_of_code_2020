@@ -19,47 +19,78 @@ fn main() {
     // );
 }
 
-fn try_children(pattern: &Pattern, tiles: &Vec<Tile>, x: u16, y: u16) -> SimpleResult<Pattern> {
-    println!("try insert into {}/{}\n{}", x, y, pattern);
+// fn try_children(pattern: &Pattern, tiles: &Vec<Tile>, x: u16, y: u16) -> SimpleResult<Pattern> {
+//     println!("try insert into {}/{}\n{}", x, y, pattern);
 
-    if pattern.is_full() {
-        Ok(pattern.clone())
-    } else {
-        for tile in tiles {
-            if pattern.contains_tile(&tile) {
-                continue;
-            }
-            if let Ok(p) = try_insert(&pattern, &tile, x, y) {
-                // try to insert tiles into the surounding empty cells
-                println!("\t did insert tile {}", tile.get_number());
+//     if pattern.is_full() {
+//         println!("\t pattern is full");
+//         Ok(pattern.clone())
+//     } else {
+//         for tile in tiles {
+//             if pattern.contains_tile(&tile) {
+//                 continue;
+//             }
+//             println!(
+//                 "trying to insert tile {} into {}/{}",
+//                 tile.get_number(),
+//                 x,
+//                 y
+//             );
 
-                let diff: Vec<(i16, i16)> = vec![(-1, 0), (1, 0), (0, -1), (0, 1)];
+//             if let Ok(p) = try_insert(&pattern, &tile, x, y) {
+//                 // try to insert tiles into the surounding empty cells
+//                 println!("\t did insert tile {}", tile.get_number());
 
-                let mut new_pattern = p.clone();
+//                 let diff: Vec<(i16, i16)> = vec![(-1, 0), (1, 0), (0, -1), (0, 1)];
 
-                for (dy, dx) in diff {
-                    let check_x: i16 = (x as i16) + dx;
-                    let check_y: i16 = (y as i16) + dy;
+//                 let mut new_pattern = p.clone();
 
-                    if !(new_pattern.index_in_range(check_x, check_y)) {
-                        continue;
-                    }
+//                 for (dy, dx) in diff {
+//                     let check_x: i16 = (x as i16) + dx;
+//                     let check_y: i16 = (y as i16) + dy;
 
-                    if !(new_pattern.contains_index(check_x as u16, check_y as u16)) {
-                        if let Ok(pp) =
-                            try_children(&new_pattern, &tiles, check_x as u16, check_y as u16)
-                        {
-                            new_pattern = pp;
-                        } else {
-                            bail!("could not fill in empty cells!");
-                        }
-                    }
-                }
-                return Ok(new_pattern);
-            }
+//                     if !(new_pattern.index_in_range(check_x, check_y)) {
+//                         continue;
+//                     }
+
+//                     println!("\t trying neighbor {} / {}", check_x, check_y);
+
+//                     if !(new_pattern.contains_index(check_x as u16, check_y as u16)) {
+//                         if let Ok(pp) =
+//                             try_children(&new_pattern, &tiles, check_x as u16, check_y as u16)
+//                         {
+//                             new_pattern = pp;
+//                         }
+//                     }
+//                 }
+//                 return Ok(new_pattern);
+//             }
+//         }
+//         bail!("no matching remaining tiles found");
+//     }
+// }
+
+fn try_to_fill(pattern: &Pattern, tiles: &Vec<Tile>, x: u16, y: u16) -> SimpleResult<Pattern> {
+    println!("trying to fill {}/{}", x, y);
+    for tile in tiles {
+        if pattern.contains_tile(&tile) {
+            continue;
         }
-        bail!("no matching remaining tiles found");
+        println!(
+            "\trying to insert tile {} into {}/{}",
+            tile.get_number(),
+            x,
+            y
+        );
+
+        if let Ok(p) = try_insert(&pattern, &tile, x, y) {
+            // try to insert tiles into the surounding empty cells
+            println!("\t did insert tile {}", tile.get_number());
+
+            return Ok(p);
+        }
     }
+    bail!("no matching remaining tiles found");
 }
 
 fn try_insert(pattern: &Pattern, new_tile: &Tile, x: u16, y: u16) -> SimpleResult<Pattern> {
@@ -87,8 +118,38 @@ fn try_insert(pattern: &Pattern, new_tile: &Tile, x: u16, y: u16) -> SimpleResul
     }
 }
 
+fn do_try(pattern: &Pattern, tiles: &Vec<Tile>, x: u16, y: u16) -> SimpleResult<Pattern> {
+    if let Ok(np) = try_to_fill(pattern, tiles, x, y) {
+        println!("did fill {}/{}", x, y);
+        let mut new_pattern = np.clone();
+        let diff: Vec<(i16, i16)> = vec![(-1, 0), (1, 0), (0, -1), (0, 1)];
+
+        for (dy, dx) in diff {
+            let check_x: i16 = (x as i16) + dx;
+            let check_y: i16 = (y as i16) + dy;
+
+            if !(new_pattern.index_in_range(check_x, check_y)) {
+                continue;
+            }
+
+            println!("\t trying neighbor {} / {}", check_x, check_y);
+
+            if !(new_pattern.contains_index(check_x as u16, check_y as u16)) {
+                if let Ok(pp) = do_try(&new_pattern, &tiles, check_x as u16, check_y as u16) {
+                    new_pattern = pp;
+                } else {
+                    println!(" could not fill {}/{}", check_x, check_y);
+                }
+            }
+        }
+        Ok(new_pattern)
+    } else {
+        bail!("could not fill {}/{}", x, y);
+    }
+}
+
 fn part_1(tiles: &Vec<Tile>, size: u16) -> SimpleResult<u64> {
-    let p = try_children(&Pattern::new(size), &tiles, 0, 0)?;
+    let p = do_try(&Pattern::new(size), &tiles, 0, 0)?;
     println!("PATTERN: {}", p);
 
     Ok(0)
