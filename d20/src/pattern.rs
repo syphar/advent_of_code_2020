@@ -50,7 +50,7 @@ impl Pattern {
 
             if let Some(other_tile) = self.data.get(&(y, x + 1)) {
                 cells_found += 1;
-                if tile.last_column() == other_tile.last_column() {
+                if tile.last_column() == other_tile.first_column() {
                     cells_matching += 1;
                 }
             }
@@ -147,9 +147,53 @@ mod tests {
         "Tile 2:\n\
         #.#\n\
         #..\n\
-        #.#"
+        #.#",
+        "1\t2\t\n"; 
+        "right"
     )]
-    fn test_try_insert(input_0_0: &str, x: i16, y: i16, new_tile: &str) {
+    #[test_case(
+        "Tile 1:\n\
+        #.#\n\
+        ..#\n\
+        ..#",
+        -1,
+        0,
+        "Tile 2:\n\
+        #.#\n\
+        #..\n\
+        #..",
+        "2\t1\t\n";
+        "left"
+    )]
+    #[test_case(
+        "Tile 1:\n\
+        #.#\n\
+        ..#\n\
+        ..#",
+        0,
+        1,
+        "Tile 2:\n\
+        ..#\n\
+        #..\n\
+        #.#",
+        "1\t\n2\t\n"; 
+        "down"
+    )]
+    #[test_case(
+        "Tile 1:\n\
+        #.#\n\
+        ..#\n\
+        ..#",
+        0,
+        -1,
+        "Tile 2:\n\
+        #..\n\
+        #..\n\
+        #.#", 
+        "2\t\n1\t\n"; 
+        "up"
+    )]
+    fn test_try_insert(input_0_0: &str, x: i16, y: i16, new_tile: &str, expected: &str) {
         // intial setup
         let mut p = Pattern::new();
         let input_tile: Tile = input_0_0.parse().unwrap();
@@ -159,7 +203,7 @@ mod tests {
         let new_tile: Tile = new_tile.parse().unwrap();
         p.try_insert(&new_tile, x, y).unwrap();
 
-        assert_eq!(format!("{}", p), "1\t2\t\n");
+        assert_eq!(format!("{}", p), expected);
     }
 
     #[test_case(
@@ -172,7 +216,21 @@ mod tests {
         "Tile 2:\n\
         #.#\n\
         ...\n\
-        #.#"
+        #.#"; 
+        "new tile on the right, pattern mismatch"
+    )]
+    #[test_case(
+        "Tile 1:\n\
+        #.#\n\
+        ..#\n\
+        ..#",
+        2,
+        0,
+        "Tile 2:\n\
+        #.#\n\
+        #..\n\
+        #.#"; 
+        "good match, but not directly next to each other"
     )]
     fn test_try_insert_fail(input_0_0: &str, x: i16, y: i16, new_tile: &str) {
         // intial setup
