@@ -1,6 +1,15 @@
 use simple_error::{bail, SimpleError};
+use std::convert::TryInto;
 use std::fmt;
 use std::str::FromStr;
+
+pub enum TileConversion {
+    FlipX,
+    FlipY,
+    Rotate90,
+    Rotate180,
+    Rotate270,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Tile {
@@ -14,6 +23,20 @@ impl Tile {
             num,
             data: [[false; 10]; 10],
         }
+    }
+
+    pub fn get_row(&self, y: usize) -> [bool; 10] {
+        self.data[y]
+    }
+
+    pub fn get_column(&self, x: usize) -> [bool; 10] {
+        self.data
+            .iter()
+            .map(|row| row[x])
+            .collect::<Vec<_>>()
+            .as_slice()
+            .try_into()
+            .unwrap()
     }
 }
 
@@ -126,6 +149,16 @@ mod tests {
         assert_eq!(
             tile.data[9],
             [false, false, true, false, true, true, true, false, false, false]
+        );
+
+        assert_eq!(
+            tile.get_row(0),
+            [true, false, true, false, true, true, true, true, true, false]
+        );
+
+        assert_eq!(
+            tile.get_column(0),
+            [true, false, false, true, true, false, true, false, false, false]
         );
 
         assert_eq!(format!("{}", tile), input);
